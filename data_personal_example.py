@@ -1,4 +1,4 @@
-# Make a file called data_personal with a variation of the following file.
+# Make a file called data_personal.py with a variation of the following file.
 # Do NOT check in that file into git!
 
 #Links:
