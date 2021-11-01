@@ -11,5 +11,5 @@ block_data_file = "/Volumes/Library/CAMCOS_DATASETS/bxs_12965_12967.csv"
 large_pre_gas_prices_file = "/Volumes/Library/CAMCOS_DATASETS/03_22_03_26.csv"
 
 #suite spot data
-suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475700_12491800.csv"
-suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475700_12491800.csv"
+suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475800_12491299.csv"
+suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_12491299.csv"

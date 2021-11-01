@@ -26,5 +26,5 @@ geth_reccomendation_file="/Volumes/Library/CAMCOS_DATASETS/pre_geth_predictions.
 
 
 #suite spot data
-suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475700_12491800.csv"
-suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475700_12491800.csv"
+suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475800_12491299.csv"
+suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_12491299.csv"
