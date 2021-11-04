@@ -13,3 +13,5 @@ large_pre_gas_prices_file = "/Volumes/Library/CAMCOS_DATASETS/03_22_03_26.csv"
 #suite spot data
 suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475800_12491299.csv"
 suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_12491299.csv"
+
+post_eip_large_blocks="/Volumes/Library/CAMCOS_DATASETS/randy_block_data/post_eip.csv"
