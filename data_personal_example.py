@@ -15,3 +15,8 @@ suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475800_1
 suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_12491299.csv"
 
 post_eip_large_blocks="/Volumes/Library/CAMCOS_DATASETS/randy_block_data/post_eip.csv"
+
+##Data for post eip disregarding the blocks with spikes
+new_post_eip_txn="/Volumes/Library/CAMCOS_DATASETS/pre_eip_data_no_spikes/transactions_cut.csv"
+new_post_eip_blx="/Volumes/Library/CAMCOS_DATASETS/pre_eip_data_no_spikes/blocks_cut.csv"
+new_post_eip_rcpts="/Volumes/Library/CAMCOS_DATASETS/pre_eip_data_no_spikes/receipts_cut.csv"
