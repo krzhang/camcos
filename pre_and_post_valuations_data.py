@@ -28,3 +28,8 @@ geth_reccomendation_file="/Volumes/Library/CAMCOS_DATASETS/pre_geth_predictions.
 #suite spot data
 suite_spot_txn="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/txns_12475800_12491299.csv"
 suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_12491299.csv"
+
+
+#pre-eip data LATE OCTOBER
+post_eip_oct_txn_file="/Volumes/Library/CAMCOS_DATASETS/post_eip_oct_txns.csv"
+post_eip_oct_blx_file="/Volumes/Library/CAMCOS_DATASETS/post_eip_oct_blx.csv"
