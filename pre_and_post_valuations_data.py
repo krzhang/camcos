@@ -33,3 +33,6 @@ suite_spot_blx="/Volumes/Library/CAMCOS_DATASETS/suite_spot_data/blks_12475800_1
 #pre-eip data LATE OCTOBER
 post_eip_oct_txn_file="/Volumes/Library/CAMCOS_DATASETS/post_eip_oct_txns.csv"
 post_eip_oct_blx_file="/Volumes/Library/CAMCOS_DATASETS/post_eip_oct_blx.csv"
+
+#october block data
+october_block_data="/Volumes/Library/CAMCOS_DATASETS/oct.csv"
