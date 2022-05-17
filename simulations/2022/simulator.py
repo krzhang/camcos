@@ -6,6 +6,39 @@ from collections import deque
 
 DEFAULT_ORACLE_INDEX = 60 # current geth oracle looks at the 60th smallest 
 
+class Oracle():
+
+  def __init__(self, filename="block_data.csv"):
+    """ 
+    read in data to initialize oracle. Needs to return a [block_mins] list of block minimums
+    for future oracle updates.
+    """
+    self.block_mins = deque([])
+    # the main oracle object, storing the block minimums (min price needed to get in block)
+    # (keep sorted) TODO: use a heap
+    self.oracle_index = 60 # the oracle price is the 60th price in the sorted block mins
+    self.current_oracle_price = None # the current oracle price
+    
+    data = pd.read_csv(filename)
+    df = data[['gasLimit','minGasPrice']].values 
+    for d in df:
+      if len(self.block_mins) == 100:
+        break
+      if d[1] == 'None':
+        continue
+      self.block_mins.append(int(d[1]) / 10**9) # divide to convert Gwei
+
+  def price(self):
+    return self.block_mins[self.oracle_index - 1]
+      
+  def update_oracle(self, block):
+    """ given a block, how to update the oracle?"""
+    recent_gp = block[-1][1]
+    self.block_mins.popleft()
+    self.block_mins.append(recent_gp)
+    self.block_mins = sorted(self.block_mins)
+
+
 class Basefee():
 
   def __init__(self, d, target_limit, max_limit):
@@ -67,13 +100,6 @@ class BasefeeSimulator(Simulator):
     self.mempool = self.mempool.sort_values(by=['gas price'], ascending=False).reset_index(drop=True)
     return
   
-  def update_oracle(self):
-    recent_gp = self.blocks[-1][-1][1]
-    self.block_mins.popleft()
-    self.block_mins.append(recent_gp)
-
-    sorted_block_mins = sorted(self.block_mins)
-    self.current_oracle = sorted_block_mins[DEFAULT_ORACLE_INDEX-1]
 
   def fill_block(self, time):
     """ create a block greedily from the mempool and return it"""
@@ -105,24 +131,13 @@ class BasefeeSimulator(Simulator):
     mempools_bf = []
     txn_counts = []
 
-    #read in data to initialize oracle
-    data = pd.read_csv('block_data.csv')
-    minGasdf = data[['gasLimit','minGasPrice']].values 
-    for d in minGasdf:
-      if len(self.block_mins) == 100:
-        break
-      if d[1] == 'None':
-        continue
-      self.block_mins.append(int(d[1]) / 10**9) # divide to convert Gwei
+    self.oracle = Oracle()
 
-    self.basefee.value = self.block_mins[-1]
+    # sorted_block_mins = sorted([x - self.basefee.value if x >= self.basefee.value
+    #                             else 0 for x in self.block_mins])
+
+    self.basefee.value = self.oracle.block_mins[-1]
     basefees = [self.basefee.value]
-
-    sorted_block_mins = sorted([x - self.basefee.value if x >= self.basefee.value
-                                else 0 for x in self.block_mins])
-
-    #set initial oracles
-    self.current_oracle = sorted_block_mins[DEFAULT_ORACLE_INDEX-1]
 
     #initialize mempools 
     self.update_mempool(init_txns)
@@ -132,7 +147,7 @@ class BasefeeSimulator(Simulator):
       #fill blocks from mempools
       new_block, new_block_size = self.fill_block(i)
       self.blocks += [new_block]
-      self.update_oracle()
+      self.oracle.update(new_block)
 
       #update mempools
 
