@@ -69,7 +69,10 @@ class Simulator():
 
 class BasefeeSimulator(Simulator):
 
-  """ Default 'Post-EIP-1559' or I guess now 'standard' simulator. """
+  """ 
+  Default 'Post-EIP-1559' or I guess now 'standard' simulator.
+  Eventually we should deprecate this for just a special case of the multidimensional one
+  """
 
   def __init__(self, basefee):
     super().__init__()
@@ -170,7 +173,7 @@ class MultiSimulator(Simulator):
 
   """ Multidimensional EIP-1559 simulator. """
 
-  def __init__(self, basefee, ratio, basefee_behavior="INDEPENDENT"):
+  def __init__(self, basefee, ratio, resource_behavior="INDEPENDENT"):
     """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
@@ -178,7 +181,7 @@ class MultiSimulator(Simulator):
     super().__init__()
     self.basefee = [basefee.scaled_copy(ratio[0]), basefee.scaled_copy(ratio[1])]
     self.ratio = ratio
-    self.basefee_behavior = basefee_behavior
+    self.resource_behavior = resource_behavior
 
   def total_bf(self):
     return self.basefee[0].value + self.basefee[1].value
@@ -195,14 +198,14 @@ class MultiSimulator(Simulator):
                   for v in valuations]
     self.gas_price_batches += [gas_prices]
 
-    if self.basefee_behavior == "CORRELATED":
+    if self.resource_behavior == "CORRELATED":
       _gas_limits_single = (np.random.pareto(1.42150, txn_count)+1)*21000
       # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
       gas_limits_1 = [g*self.ratio[0] for g in _gas_limits_single]
       gas_limits_2 = [g*self.ratio[1] for g in _gas_limits_single]
       # this is completely correlated, so it really shouldn't affect basefee behavior
     else:
-      assert (self.basefee_behavior == "INDEPENDENT")
+      assert (self.resource_behavior == "INDEPENDENT")
       _gas_limits_1_single = (np.random.pareto(1.42150, txn_count)+1)*21000
       _gas_limits_2_single = (np.random.pareto(1.42150, txn_count)+1)*21000
       gas_limits_1 = [g*self.ratio[0] for g in _gas_limits_1_single]
@@ -215,7 +218,7 @@ class MultiSimulator(Simulator):
         'r1 limit': gas_limits_1,
         'r2 limit': gas_limits_2,
         'time': t,
-        'amount paid': [x * (y+z) for x,y,z in
+        'amount paid': [x * (y+z) for x, y, z in
                         zip(gas_prices, gas_limits_1, gas_limits_2)]})],
                              ignore_index=True)
     
