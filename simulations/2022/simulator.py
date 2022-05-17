@@ -4,13 +4,19 @@ import random
 
 from collections import deque
 
-TARGET_GAS_LIMIT = 15000000
-MAX_GAS_LIMIT = 30000000
 DEFAULT_ORACLE_INDEX = 60 # current geth oracle looks at the 60th smallest 
 
-def updated_basefee(b, g):
-  """ return updated basefee given [b] original basefee and [g] gas used"""
-  return b*(1+(1/8)*((g-TARGET_GAS_LIMIT)/TARGET_GAS_LIMIT))
+class Basefee():
+
+  def __init__(self, d, target_limit, max_limit):
+    self.target_limit = target_limit
+    self.max_limit = max_limit
+    self.d = d
+    self.value = 0.0
+
+  def update(self, gas):
+    """ return updated basefee given [b] original basefee and [g] gas used"""
+    self.value = self.value*(1+self.d*((gas-self.target_limit)/self.target_limit))
 
 class Simulator():
 
@@ -29,8 +35,8 @@ class BasefeeSimulator(Simulator):
 
   """ Default 'Post-EIP-1559' or I guess now 'standard' simulator. """
 
-  def __init__(self):
-    self.basefee = 0.0
+  def __init__(self, basefee):
+    self.basefee = basefee
     self.current_oracle = 0.0
     super().__init__()
   
@@ -41,7 +47,7 @@ class BasefeeSimulator(Simulator):
     # the valuations and gas limits for the transactions. Following code from
     # 2021S
     valuations = np.random.gamma(20.72054, 1/17.49951, txn_count)
-    gas_prices = [self.basefee + (self.current_oracle * v)
+    gas_prices = [self.basefee.value + (self.current_oracle * v)
                   for v in valuations]
     self.gas_price_batches += [gas_prices]
 
@@ -50,12 +56,11 @@ class BasefeeSimulator(Simulator):
     
     # store each updated mempool as a DataFrame
 
-    self.mempool = self.mempool.append(pd.DataFrame({
+    self.mempool = pd.concat([self.mempool, pd.DataFrame({
         'gas price': gas_prices,
         'gas limit': gas_limits,
         'time': t,
-        'amount paid' : [x * y for x,y in zip(gas_prices, gas_limits)]
-        }), ignore_index=True)
+        'amount paid': [x * y for x,y in zip(gas_prices, gas_limits)]})], ignore_index=True)
     
     # sort transactions in each mempool by gas price
     
@@ -74,11 +79,11 @@ class BasefeeSimulator(Simulator):
     """ create a block greedily from the mempool and return it"""
     block = []
     block_size = 0
-    block_limit = MAX_GAS_LIMIT 
+    block_limit = self.basefee.max_limit
 
     for i in range(len(self.mempool)):
       txn = self.mempool.iloc[i, :].tolist()
-      if block_size + txn[1] > block_limit or txn[0] < self.basefee:
+      if block_size + txn[1] > block_limit or txn[0] < self.basefee.value:
         break
       else:
         block.append(txn)
@@ -110,10 +115,10 @@ class BasefeeSimulator(Simulator):
         continue
       self.block_mins.append(int(d[1]) / 10**9) # divide to convert Gwei
 
-    self.basefee = self.block_mins[-1]
-    basefees = [self.basefee]
+    self.basefee.value = self.block_mins[-1]
+    basefees = [self.basefee.value]
 
-    sorted_block_mins = sorted([x - self.basefee if x >= self.basefee
+    sorted_block_mins = sorted([x - self.basefee.value if x >= self.basefee.value
                                 else 0 for x in self.block_mins])
 
     #set initial oracles
@@ -131,12 +136,12 @@ class BasefeeSimulator(Simulator):
 
       #update mempools
 
-      self.basefee = updated_basefee(self.basefee, new_block_size)
-      basefees += [self.basefee]
+      self.basefee.update(new_block_size)
+      basefees += [self.basefee.value]
 
       mempools += [pd.DataFrame(self.mempool)]
       # this creates a copy; dataframes and lists are mutable
-      mempools_bf += [self.mempool[self.mempool['gas price'] >= self.basefee]]
+      mempools_bf += [self.mempool[self.mempool['gas price'] >= self.basefee.value]]
       # what does this do??
 
       # add 200 new txns before next iteration
