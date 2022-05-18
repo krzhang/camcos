@@ -1,42 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
-
-from collections import deque
-
-DEFAULT_ORACLE_INDEX = 60 # current geth oracle looks at the 60th smallest 
-
-class Oracle():
-
-  def __init__(self, filename="block_data.csv"):
-    """ 
-    read in data to initialize oracle. Needs to return a [block_mins] list of block minimums
-    for future oracle updates.
-    """
-    self.block_mins = deque([])
-    # the main oracle object, storing the block minimums (min price needed to get in block)
-    # (keep sorted) TODO: use a heap
-    self.oracle_index = 60 # the oracle price is the 60th price in the sorted block mins
-    self.current_oracle_price = None # the current oracle price
-    
-    data = pd.read_csv(filename)
-    df = data[['gasLimit','minGasPrice']].values 
-    for d in df:
-      if len(self.block_mins) == 100:
-        break
-      if d[1] == 'None':
-        continue
-      self.block_mins.append(int(d[1]) / 10**9) # divide to convert Gwei
-
-  def price(self, bfvalue):
-    sorted_mins = sorted([x - bfvalue if x >= bfvalue else 0 for x in self.block_mins])
-    return sorted_mins[self.oracle_index - 1]
-      
-  def update(self, block):
-    """ given a block, how to update the oracle?"""
-    recent_gp = block[-1][1]
-    self.block_mins.popleft()
-    self.block_mins.append(recent_gp)
+import oracle
 
 class Basefee():
 
@@ -58,7 +23,6 @@ class Simulator():
 
   def __init__(self):
     self.blocks = []
-    self.block_mins = deque([])
     self.gas_price_batches = []
     self.wait_times = []
     self.mempool = pd.DataFrame()
@@ -71,13 +35,12 @@ class BasefeeSimulator(Simulator):
 
   """ 
   Default 'Post-EIP-1559' or I guess now 'standard' simulator.
-  Eventually we should deprecate this for just a special case of the multidimensional one
+  Eventually we should deprecate this as a special case of MultiSimulator
   """
 
   def __init__(self, basefee):
     super().__init__()
     self.basefee = basefee
-    # self.current_oracle = 0.0
   
   def update_mempool(self, txn_count, t=0):
     """
@@ -140,7 +103,7 @@ class BasefeeSimulator(Simulator):
     self.basefee.value = basefee_init 
     basefees = [self.basefee.value]
 
-    self.oracle = Oracle()
+    self.oracle = oracle.Oracle()
     self.update_mempool(init_txns)
 
     #iterate over n blocks
@@ -168,6 +131,10 @@ class BasefeeSimulator(Simulator):
 
       # print("progress: ", i+1, end = '\r')
     return basefees, self.blocks, mempools, mempools_bf, txn_counts, self.wait_times
+
+##############################
+# Multi-dimensional EIP-1559 #
+##############################
 
 class MultiSimulator(Simulator):
 
@@ -248,7 +215,7 @@ class MultiSimulator(Simulator):
     block_wait_times = [time - txn[3] for txn in block]
     self.wait_times.append(block_wait_times)
 
-    self.mempool = self.mempool.iloc[i+1: , :]
+    self.mempool = self.mempool.iloc[i+1:, :]
     return block, block_size
 
   def simulate(self, step_count, total_basefee_init, init_txns=8500, txns_per_turn=200):
@@ -261,10 +228,7 @@ class MultiSimulator(Simulator):
     mempools_bf = []
     txn_counts = []
 
-    self.oracle = Oracle()
-
-    # sorted_block_mins = sorted([x - self.basefee.value if x >= self.basefee.value
-    #                             else 0 for x in self.block_mins])
+    self.oracle = oracle.Oracle()
 
     self.basefee[0].value = total_basefee_init*self.ratio[0]
     self.basefee[1].value = total_basefee_init*self.ratio[1]
