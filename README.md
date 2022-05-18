@@ -1,11 +1,7 @@
-# camcos Project, Spring 2021 - 
+# CAMCOS Repository 
 
-# Important links
+This is a repository of centralized CAMCOS stuff starting with Spring 2021. The current repository is a fork of [Mustafa's repo](https://github.com/mustafaqazi916/camcos).
 
-Google drive: https://drive.google.com/drive/folders/1xskDSaCgMP64lQnkxMnTWbHwFo4NnArI?usp=sharing
+## links
 
-# Specific Installation Directions
-
-1. download the relevant data to a folder of your choice (do NOT commit to the repo)
-2. make a `data_personal.py` based on `data_personal_example.py`. Do NOT commit it to git.
-3. do NOT commit that file into the repository
+- Google drive: https://drive.google.com/drive/folders/1xskDSaCgMP64lQnkxMnTWbHwFo4NnArI?usp=sharing
