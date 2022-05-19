@@ -4,7 +4,7 @@ import random
 import oracle
 
 INFTY = 3000000
-MAX_LIMIT = 800000
+MAX_LIMIT = 8000000
 class Basefee():
 
   def __init__(self, d, target_limit, max_limit, value=0.0):
@@ -57,24 +57,31 @@ class Simulator():
     # the valuations and gas limits for the transactions. Following code from
     # 2021S
     prices = {}
+
+    # the mean for gamma(k, \theta) is k\theta, so the mean is a bit above 1.
+    # note we use the initial value as a proxy for a "fair" basefee; we don't want people to
+    # arbitrarily follow higher basefee, then it will spiral out of control
+    # in particular, these people don't use a price oracle!
+    
     _valuations = np.random.gamma(20.72054, 1/17.49951, txn_count)
     for r in self.resources:
-      prices[r] = [self.basefee[r].value + (self.oracle.rec_tips[r] * v) for v in _valuations]
+      prices[r] = [self.basefee_init * v for v in _valuations]
 
     limits = {}
     if self.resource_behavior == "CORRELATED":
       _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
-      _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
       # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
       for r in self.resources:
-        limits[r] = [g*self.ratio[r] for g in _limits_sample]
+        limits[r] = [min(g*self.ratio[r], self.basefee[r].max_limit)
+                     for g in _limits_sample]
       # this is completely correlated, so it really shouldn't affect basefee behavior
     else:
       assert (self.resource_behavior == "INDEPENDENT")
       for r in self.resources:
         _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
         _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
-        limits[r] = [g*self.ratio[r] for g in _limits_sample]
+        limits[r] = [min(g*self.ratio[r], self.basefee[r].max_limit)
+                     for g in _limits_sample]
 
     # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
     # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
@@ -82,17 +89,28 @@ class Simulator():
 
     total_values = [sum([prices[r][i] * limits[r][i] for r in self.resources]) for
                     i in range(txn_count)]
-    
+
     data = []
     for r in self.resources:
       data.append((r + " price", prices[r]))
       data.append((r + " limit", limits[r]))
     data.append(("time", t)) # I guess this one just folds out to all of them?
     data.append(("total_value", total_values))
+    data.append(("profit", 0))
     txns = pd.DataFrame(dict(data))
 
     self.mempool = pd.concat([self.mempool, txns])
 
+  def _compute_profit(self, tx):
+    """ 
+    Given a txn (DataFrame), compute the profit (given current basefees). This is the difference
+    between its [total_value] and the burned basefee
+
+    """
+    txn = tx.to_dict()
+    burn = sum([txn[r + " limit"] * self.basefee[r].value for r in self.resources])
+    return tx["total_value"] - burn
+    
   def fill_block(self, time):
     """ create a block greedily from the mempool and return it"""
     block = []
@@ -104,7 +122,8 @@ class Simulator():
     # we now do a greedy algorithm to fill the block.
 
     # 1. we sort transactions in each mempool by total value in descending order
-    self.mempool = self.mempool.sort_values(by=['total_value'],
+    self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
+    self.mempool = self.mempool.sort_values(by=['profit'],
                                             ascending=False).reset_index(drop=True)
 
     # 2. we keep going until we get stuck (basefee too high, or breaks resource limit)
@@ -114,11 +133,12 @@ class Simulator():
     patience = 10
     included_indices = []
     for i in range(len(self.mempool)):
-      txn = self.mempool.iloc[i, :].to_dict()
+      tx = self.mempool.iloc[i, :]
+      txn = tx.to_dict()
       # this should give something like {"time":blah, "total_value":blah...
       # TODO: should allow negative money if it's worth a lot of money in total
-      if (any(txn[r + " price"] < self.basefee[r].value for r in self.resources) or 
-          any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources)):
+      if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
+          txn["profit"] < 0):
         if patience == 0:
           break
         else:
@@ -138,17 +158,19 @@ class Simulator():
 
     return block, block_size, block_min_tip
 
-  def simulate(self, step_count, init_txns=200, txns_per_turn=200):
+  def simulate(self, step_count, init_txns=2000, txns_per_turn=300):
     """ Run the simulation for n steps """
 
     # initialize empty dataframes
     blocks = []
+    mempools = []
     new_txn_counts = []
     used_txn_counts = []
     self.oracle = oracle.Oracle(self.resources, self.ratio, self.basefee_init)
 
     basefees = {r:[self.basefee[r].value] for r in self.resources}
-
+    limit_used = {r:[] for r in self.resources}
+    min_tips = {r:[] for r in self.resources}
     #initialize mempools 
     self.update_mempool(init_txns)
 
@@ -164,8 +186,10 @@ class Simulator():
       for r in self.resources:
         self.basefee[r].update(new_block_size[r])
         basefees[r] += [self.basefee[r].value]
+        limit_used[r].append(new_block_size[r])
+        min_tips[r].append(new_block_min_tips[r])
 
-      # # Not used: save mempools (expensive!)
+      # # Commented: save mempools (expensive!)
       # # if we do use them, this creates a copy; dataframes and lists are mutable
       # mempools += [pd.DataFrame(self.mempool)]
       
@@ -173,13 +197,26 @@ class Simulator():
       # what does this do??
 
       # new txns before next iteration
-      new_txns_count = random.randint(5, txns_per_turn * 2 - 5)
+      # we want supply to match demand;
+      # right now target gas is 15000000, each transaction is on average 2.42*21000 = 52000 gas,
+      # so we should shoot for 300 transactions per turn
+
+      new_txns_count = random.randint(50, txns_per_turn * 2 - 50)
+      # new_txns_count = txns_per_turn
+      
       self.update_mempool(new_txns_count, i)
       
       new_txn_counts.append(new_txns_count)
       used_txn_counts.append(len(new_block))
       # print("progress: ", i+1, end = '\r')
-    return basefees, blocks, new_txn_counts, used_txn_counts
+      
+    block_data = {"blocks":blocks,
+                  "limit_used":limit_used,
+                  "min_tips":min_tips}
+    mempool_data = {"new_txn_counts":new_txn_counts,
+#                    "mempools":mempools,
+                    "used_txn_counts":used_txn_counts}
+    return basefees, block_data, mempool_data
 
   
 # Plotting code
