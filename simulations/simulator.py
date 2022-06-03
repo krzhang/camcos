@@ -5,6 +5,32 @@ import oracle
 
 INFTY = 3000000
 MAX_LIMIT = 8000000
+
+class Demand():
+  """ class fore creating a demand profile """
+
+  def __init__(self, init_txns, txns_per_turn, step_count, basefee_init):
+    self.valuations = []
+    self.limits = []
+    for i in range(step_count+1):
+      # we add 1 since there's just also transactions to begin with
+      if i == 0:
+        txn_count = init_txns
+      else:
+        txn_count = random.randint(50, txns_per_turn * 2 - 50)
+
+      # the mean for gamma(k, \theta) is k\theta, so the mean is a bit above 1.
+      # note we use the initial value as a proxy for a "fair" basefee; we don't want people to
+      # arbitrarily follow higher basefee, then it will spiral out of control
+      # in particular, these people don't use a price oracle!
+
+      self.valuations.append(np.random.gamma(20.72054, 1/17.49951, txn_count))
+
+      # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
+      _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
+      _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
+      self.limits.append(_limits_sample)
+
 class Basefee():
 
   def __init__(self, d, target_limit, max_limit, value=0.0):
@@ -49,8 +75,16 @@ class Simulator():
     self.mempool = pd.DataFrame([])
   # def total_bf(self):
   #   return self.basefee[0].value + self.basefee[1].value
-    
-  def update_mempool(self, txn_count, t=0):
+
+  def _twiddle_ratio(self):
+    """ given a ratio, twiddle the ratios a bit"""
+    ratio = self.ratio
+    new_ratios = {x:random.uniform(0.0, ratio[x]) for x in ratio}
+    normalization = sum(new_ratios[x] for x in new_ratios)
+    newer_ratios = {x:new_ratios[x]/normalization for x in ratio}
+    return newer_ratios
+  
+  def update_mempool(self, demand, t):
     """
     Make [txn_number] new transactions and add them to the mempool
     """
@@ -58,29 +92,25 @@ class Simulator():
     # 2021S
     prices = {}
 
-    # the mean for gamma(k, \theta) is k\theta, so the mean is a bit above 1.
-    # note we use the initial value as a proxy for a "fair" basefee; we don't want people to
-    # arbitrarily follow higher basefee, then it will spiral out of control
-    # in particular, these people don't use a price oracle!
+    _valuations = demand.valuations[t]
+    txn_count = len(_valuations)
     
-    _valuations = np.random.gamma(20.72054, 1/17.49951, txn_count)
     for r in self.resources:
       prices[r] = [self.basefee_init * v for v in _valuations]
 
     limits = {}
+    _limits_sample = demand.limits[t]
+    
     if self.resource_behavior == "CORRELATED":
-      _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
-      # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
       for r in self.resources:
         limits[r] = [min(g*self.ratio[r], self.basefee[r].max_limit)
                      for g in _limits_sample]
       # this is completely correlated, so it really shouldn't affect basefee behavior
     else:
       assert (self.resource_behavior == "INDEPENDENT")
+      new_ratios = self._twiddle_ratio()
       for r in self.resources:
-        _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
-        _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
-        limits[r] = [min(g*self.ratio[r], self.basefee[r].max_limit)
+        limits[r] = [min(g*new_ratios[r], self.basefee[r].max_limit)
                      for g in _limits_sample]
 
     # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
@@ -158,7 +188,7 @@ class Simulator():
 
     return block, block_size, block_min_tip
 
-  def simulate(self, step_count, init_txns=2000, txns_per_turn=300):
+  def simulate(self, demand):
     """ Run the simulation for n steps """
 
     # initialize empty dataframes
@@ -172,8 +202,10 @@ class Simulator():
     limit_used = {r:[] for r in self.resources}
     min_tips = {r:[] for r in self.resources}
     #initialize mempools 
-    self.update_mempool(init_txns)
+    self.update_mempool(demand, 0) # the 0-th slot for demand is initial transactions
 
+    step_count = len(demand.valuations) - 1
+    
     #iterate over n blocks
     for i in range(step_count):
       #fill blocks from mempools
@@ -201,15 +233,13 @@ class Simulator():
       # right now target gas is 15000000, each transaction is on average 2.42*21000 = 52000 gas,
       # so we should shoot for 300 transactions per turn
 
-      new_txns_count = random.randint(50, txns_per_turn * 2 - 50)
-      # new_txns_count = txns_per_turn
+      used_txn_counts.append(len(new_block))
       
-      self.update_mempool(new_txns_count, i)
+      self.update_mempool(demand, i+1) # we shift by 1 because of how demand is indexed
+      new_txns_count = len(demand.valuations[i+1])
       
       new_txn_counts.append(new_txns_count)
-      used_txn_counts.append(len(new_block))
-      # print("progress: ", i+1, end = '\r')
-      
+
     block_data = {"blocks":blocks,
                   "limit_used":limit_used,
                   "min_tips":min_tips}
