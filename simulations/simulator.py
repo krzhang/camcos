@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import random
-import oracle
+from simulations import oracle
 
 INFTY = 3000000
 MAX_LIMIT = 8000000
 
 class Demand():
-  """ class fore creating a demand profile """
+  """ class for creating a demand profile """
 
   def __init__(self, init_txns, txns_per_turn, step_count, basefee_init):
     self.valuations = []
