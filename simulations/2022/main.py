@@ -20,7 +20,7 @@ if __name__=="__main__":
 
     demand = Demand(2000, 300, 400, bf_standard_value)
 
-    mbf_sim = Simulator(bf_standard, ("gas", "space"), (0.7, 0.3), resource_behavior="CORRELATED")
+    mbf_sim = Simulator(bf_standard, ("gas", "space"), (0.7, 0.3), resource_behavior="CORRELATED",knapsack_solver="random")
     basefees_data, block_data, mempools_data = mbf_sim.simulate(demand)
 
     plt.rcParams["figure.figsize"] = (15, 10)

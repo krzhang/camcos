@@ -55,7 +55,7 @@ class Simulator():
 
   """ Multidimensional EIP-1559 simulator. """
 
-  def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT"):
+  def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT",knapsack_solver=None):
     """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
@@ -64,6 +64,7 @@ class Simulator():
     self.resources = resources
     self.dimension = len(resources) # number of resources
     self.resource_behavior = resource_behavior
+    self.knapsack_solver=knapsack_solver
 
     # everything else we use is basically a dictionary indexed by the resource names
     self.ratio = {resources[i]:ratio[i] for i in range(self.dimension)}
@@ -218,7 +219,7 @@ class Simulator():
     #iterate over n blocks
     for i in range(step_count):
       #fill blocks from mempools
-      new_block, new_block_size, new_block_min_tips = self.fill_block(i,method="random")
+      new_block, new_block_size, new_block_min_tips = self.fill_block(i,method=self.knapsack_solver)
       blocks += [new_block]
       self.oracle.update(new_block_min_tips)
 
