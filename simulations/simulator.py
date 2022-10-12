@@ -141,7 +141,10 @@ class Simulator():
     burn = sum([txn[r + " limit"] * self.basefee[r].value for r in self.resources])
     return tx["total_value"] - burn
     
-  def fill_block(self, time):
+  def fill_block(self, time, method=None):
+    if method is None:
+      method = "greedy"
+
     """ create a block greedily from the mempool and return it"""
     block = []
     block_size = {r:0 for r in self.resources}
@@ -152,9 +155,15 @@ class Simulator():
     # we now do a greedy algorithm to fill the block.
 
     # 1. we sort transactions in each mempool by total value in descending order
+
+
     self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
-    self.mempool = self.mempool.sort_values(by=['profit'],
+    if method == "greedy:":
+      self.mempool = self.mempool.sort_values(by=['profit'],
                                             ascending=False).reset_index(drop=True)
+    # randomly choose blocks by not sorting them
+    elif method == "random":
+      self.mempool = self.mempool.reset_index(drop=True)
 
     # 2. we keep going until we get stuck (basefee too high, or breaks resource limit)
     #    Since we might have multiple resources and we don't want to overcomplicate things,
@@ -209,7 +218,7 @@ class Simulator():
     #iterate over n blocks
     for i in range(step_count):
       #fill blocks from mempools
-      new_block, new_block_size, new_block_min_tips = self.fill_block(i)
+      new_block, new_block_size, new_block_min_tips = self.fill_block(i,method="random")
       blocks += [new_block]
       self.oracle.update(new_block_min_tips)
 
@@ -235,7 +244,7 @@ class Simulator():
 
       used_txn_counts.append(len(new_block))
       
-      self.update_mempool(demand, i+1) # we shift by 1 because of how demand is indexed
+      self.update_mempool(demand, i+1)# we shift by 1 because of how demand is indexed
       new_txns_count = len(demand.valuations[i+1])
       
       new_txn_counts.append(new_txns_count)

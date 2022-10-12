@@ -16,7 +16,9 @@ def load_data(filename, basefee_init, depth=100):
   [basefees]: an array of [depth] historical basefees (for now they are just all copies of a single
     initial basefee, since our data doesn't have basefee)
   """
-  data = pd.read_csv(filename)
+  ### Temporary solution, block data is not read properly in python file path
+  directory = "/Users/teohyikhaw/PycharmProjects/camcos/simulations/"
+  data = pd.read_csv(directory+filename)
   df = data[['gasLimit', 'minGasPrice']].values # eventually we might find other things worthwhile
 
   basefees = []
@@ -36,7 +38,7 @@ def load_data(filename, basefee_init, depth=100):
 class Oracle():
   """ Handler for all oracle (e.g. Geth) related logic. Handles muilti-dimensional EIP-1559. """
 
-  def __init__(self, resources, ratio, basefee_init, filename="block_data.csv"):
+  def __init__(self, resources, ratio, basefee_init, filename="block_data.csv", gas_prices = None):
     """ 
     read in data to initialize oracle. The main object is [block_mins], a list of block minimums
     for future oracle updates.
@@ -48,6 +50,8 @@ class Oracle():
     [basefee_init] - initial basefee
 
     the main exposed item is rec_tips, which is a dictionary from resources to the recommended tip
+
+    [gas_price] - array of gas prices of each individual resource, if set to None, will assume equally priced
     """
     self.resources = resources
     self.ratio = ratio
@@ -62,6 +66,7 @@ class Oracle():
     # the same
     # we also have to fake historical basefees. Again, we assume historically the basefees are
     # just what's given
+    self.gas_prices = gas_prices
 
     self.min_tips = {}
     for r in resources:
