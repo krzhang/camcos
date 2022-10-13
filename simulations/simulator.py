@@ -164,7 +164,7 @@ class Simulator():
                                             ascending=False).reset_index(drop=True)
     # randomly choose blocks by not sorting them
     elif method == "random":
-      self.mempool = self.mempool.reset_index(drop=True)
+      self.mempool = self.mempool.sample(frac=1).reset_index(drop=True)
 
     # 2. we keep going until we get stuck (basefee too high, or breaks resource limit)
     #    Since we might have multiple resources and we don't want to overcomplicate things,
