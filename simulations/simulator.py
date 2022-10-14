@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import random
-import oracle
+from simulations import oracle
 
 INFTY = 3000000
 MAX_LIMIT = 8000000
 
 class Demand():
-  """ class fore creating a demand profile """
+  """ class for creating a demand profile """
 
   def __init__(self, init_txns, txns_per_turn, step_count, basefee_init):
     self.valuations = []
@@ -55,7 +55,7 @@ class Simulator():
 
   """ Multidimensional EIP-1559 simulator. """
 
-  def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT"):
+  def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT",knapsack_solver=None):
     """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
@@ -64,6 +64,7 @@ class Simulator():
     self.resources = resources
     self.dimension = len(resources) # number of resources
     self.resource_behavior = resource_behavior
+    self.knapsack_solver=knapsack_solver
 
     # everything else we use is basically a dictionary indexed by the resource names
     self.ratio = {resources[i]:ratio[i] for i in range(self.dimension)}
@@ -141,7 +142,10 @@ class Simulator():
     burn = sum([txn[r + " limit"] * self.basefee[r].value for r in self.resources])
     return tx["total_value"] - burn
     
-  def fill_block(self, time):
+  def fill_block(self, time, method=None):
+    if method is None:
+      method = "greedy"
+
     """ create a block greedily from the mempool and return it"""
     block = []
     block_size = {r:0 for r in self.resources}
@@ -152,9 +156,15 @@ class Simulator():
     # we now do a greedy algorithm to fill the block.
 
     # 1. we sort transactions in each mempool by total value in descending order
+
+
     self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
-    self.mempool = self.mempool.sort_values(by=['profit'],
+    if method == "greedy:":
+      self.mempool = self.mempool.sort_values(by=['profit'],
                                             ascending=False).reset_index(drop=True)
+    # randomly choose blocks by not sorting them
+    elif method == "random":
+      self.mempool = self.mempool.sample(frac=1).reset_index(drop=True)
 
     # 2. we keep going until we get stuck (basefee too high, or breaks resource limit)
     #    Since we might have multiple resources and we don't want to overcomplicate things,
@@ -209,7 +219,7 @@ class Simulator():
     #iterate over n blocks
     for i in range(step_count):
       #fill blocks from mempools
-      new_block, new_block_size, new_block_min_tips = self.fill_block(i)
+      new_block, new_block_size, new_block_min_tips = self.fill_block(i,method=self.knapsack_solver)
       blocks += [new_block]
       self.oracle.update(new_block_min_tips)
 
@@ -235,7 +245,7 @@ class Simulator():
 
       used_txn_counts.append(len(new_block))
       
-      self.update_mempool(demand, i+1) # we shift by 1 because of how demand is indexed
+      self.update_mempool(demand, i+1)# we shift by 1 because of how demand is indexed
       new_txns_count = len(demand.valuations[i+1])
       
       new_txn_counts.append(new_txns_count)
