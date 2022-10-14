@@ -1,5 +1,6 @@
 import pandas as pd
 # from collections import deque
+import os
 
 DEFAULT_ORACLE_INDEX = 60 # current geth oracle looks at the 60th smallest 
 
@@ -17,7 +18,7 @@ def load_data(filename, basefee_init, depth=100):
     initial basefee, since our data doesn't have basefee)
   """
   ### Temporary solution, block data is not read properly in python file path
-  directory = "/Users/teohyikhaw/PycharmProjects/camcos_f2022/simulations/"
+  directory = os.getcwd().removesuffix("2022")
   data = pd.read_csv(directory+filename)
   df = data[['gasLimit', 'minGasPrice']].values # eventually we might find other things worthwhile
 
