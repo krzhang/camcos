@@ -159,7 +159,7 @@ class Simulator():
 
 
     self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
-    if method == "greedy:":
+    if method == "greedy":
       self.mempool = self.mempool.sort_values(by=['profit'],
                                             ascending=False).reset_index(drop=True)
     # randomly choose blocks by not sorting them
