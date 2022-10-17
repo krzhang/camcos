@@ -258,6 +258,42 @@ class Simulator():
                     "used_txn_counts":used_txn_counts}
     return basefees, block_data, mempool_data
 
+def generate_simulation(simulator, demand, num_iterations, filetype=None, filepath=None):
+  if filetype is None:
+    filetype = "hdf5"
+  
+
+  if not os.path.exists(filepath+"/figures/"):
+    os.mkdir(filepath+"/figures/")
+  if not os.path.exists(filepath+"/hdf5_files/"):
+    os.mkdir(filepath+"/hdf5_files/")
+
+  for i in range(num_iterations):
+    basefees_data, block_data, mempools_data = simulator.simulate(demand)
+
+    plt.rcParams["figure.figsize"] = (15, 10)
+    plt.title("Basefee over Time")
+    plt.xlabel("Block Number")
+    plt.ylabel("Basefee (in Gwei)")
+    plt.plot(basefees_data["gas"], label="gas")
+    basefees_data_space = [x + 1 for x in basefees_data["space"]]
+    plt.plot(basefees_data_space, label="space")
+    plt.legend(loc="upper left")
+    # plt.show()
+
+    # Save hdf5 file
+    uniqueid = str(uuid.uuid1()).rsplit("-")[0]
+    filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-{uuid}".format(mbf_sim.dimension,
+                                                                               x=mbf_sim.resource_behavior,
+                                                                               y=mbf_sim.knapsack_solver, uuid=uniqueid)
+
+    plt.savefig(filepath+"/figures/" + filename + ".png")
+    plt.cla()
+
+    f = h5py.File(filepath+"/hdf5_files" + filename + ".hdf5", "w")
+    f.create_dataset("gas", data=basefees_data["gas"], compression="gzip")
+    f.create_dataset("space", data=basefees_data_space, compression="gzip")
+    f.close()
   
 # Plotting code
 
