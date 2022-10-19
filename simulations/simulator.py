@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import random
 from simulations import oracle
+import os
+import h5py
+import matplotlib.pyplot as plt
+import uuid
 
 INFTY = 3000000
 MAX_LIMIT = 8000000
@@ -12,6 +16,7 @@ class Demand():
   def __init__(self, init_txns, txns_per_turn, step_count, basefee_init):
     self.valuations = []
     self.limits = []
+    self.step_count = step_count
     for i in range(step_count+1):
       # we add 1 since there's just also transactions to begin with
       if i == 0:
@@ -64,6 +69,9 @@ class Simulator():
     self.resources = resources
     self.dimension = len(resources) # number of resources
     self.resource_behavior = resource_behavior
+
+    if knapsack_solver is None:
+      self.knapsack_solver = "greedy"
     self.knapsack_solver=knapsack_solver
 
     # everything else we use is basically a dictionary indexed by the resource names
@@ -107,12 +115,13 @@ class Simulator():
         limits[r] = [min(g*self.ratio[r], self.basefee[r].max_limit)
                      for g in _limits_sample]
       # this is completely correlated, so it really shouldn't affect basefee behavior
-    else:
-      assert (self.resource_behavior == "INDEPENDENT")
+    elif self.resource_behavior == "INDEPENDENT":
       new_ratios = self._twiddle_ratio()
       for r in self.resources:
         limits[r] = [min(g*new_ratios[r], self.basefee[r].max_limit)
                      for g in _limits_sample]
+    else:
+      assert self.resource_behavior == "SEPARATED"
 
     # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
     # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
@@ -159,7 +168,7 @@ class Simulator():
 
 
     self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
-    if method == "greedy:":
+    if method == "greedy":
       self.mempool = self.mempool.sort_values(by=['profit'],
                                             ascending=False).reset_index(drop=True)
     # randomly choose blocks by not sorting them
@@ -258,6 +267,98 @@ class Simulator():
                     "used_txn_counts":used_txn_counts}
     return basefees, block_data, mempool_data
 
+def generate_simulation(simulator, demand, num_iterations, filetype=None, filepath=None):
+  # Input checking and processing
+  if filetype is None:
+    filetype = "hdf5"
+  assert filetype == "hdf5" or filetype == "csv" or filetype == "hdf5+csv"
+  if filepath is None:
+    filepath = os.getcwd() + "/generated_data/"
+    if not os.path.exists(filepath):
+      os.mkdir(filepath)
+
+  # Create file path if does not exist
+  if not os.path.exists(filepath+"/figures/"):
+    os.mkdir(filepath+"/figures/")
+  if not os.path.exists(filepath+"/data/"):
+    os.mkdir(filepath+"/data/")
+
+  created_files = []
+
+  for i in range(num_iterations):
+    basefees_data, block_data, mempools_data = simulator.simulate(demand)
+
+    plt.rcParams["figure.figsize"] = (15, 10)
+    plt.title("Basefee over Time")
+    plt.xlabel("Block Number")
+    plt.ylabel("Basefee (in Gwei)")
+    plt.plot(basefees_data["gas"], label="gas")
+    basefees_data_space = [x + 1 for x in basefees_data["space"]]
+    plt.plot(basefees_data_space, label="space")
+    plt.legend(loc="upper left")
+    # plt.show()
+
+    # Save hdf5 file
+    uniqueid = str(uuid.uuid1()).rsplit("-")[0]
+    filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-{uuid}".format(simulator.dimension,
+                                                                               x=simulator.resource_behavior,
+                                                                               y=simulator.knapsack_solver, uuid=uniqueid)
+
+    plt.savefig(filepath+"/figures/" + filename + ".png")
+    plt.cla()
+
+    if filetype == "hdf5" or filetype == "hdf5+csv":
+      f = h5py.File(filepath+"/data/" + filename + ".hdf5", "w")
+      f.create_dataset("gas", data=basefees_data["gas"], compression="gzip")
+      f.create_dataset("space", data=basefees_data_space, compression="gzip")
+      f.close()
+      print("Saving hdf5 as "+ filename+".hdf5")
+      created_files.append(filename + ".hdf5")
+    if filetype == "csv" or filetype == "hdf5+csv":
+      df = pd.DataFrame({"gas": basefees_data["gas"], "space": basefees_data_space})
+      df.to_csv(filepath + "/data/" +filename + ".csv", index=False)
+      print("Saving csv as " + filename + ".csv")
+      created_files.append(filename + ".csv")
+
+  # Take average of all files
+  gas_average = [0 for x in range(demand.step_count)]
+  space_average = [0 for x in range(demand.step_count)]
+  for filename in created_files:
+    if filetype == "hdf5" or filetype == "hdf5+csv":
+      f = h5py.File(filepath + "/data/" + filename, "r")
+      gas_average = np.add(gas_average, list(f["gas"]))
+      space_average = np.add(space_average, list(f["space"]))
+    else:
+      df = pd.read_csv(filepath+"/data/"+filename)
+      gas_average = np.add(gas_average, df["gas"])
+      space_average = np.add(space_average, df["space"])
+
+  gas_average = [x / num_iterations for x in gas_average]
+  space_average = [x / num_iterations for x in space_average]
+
+  # Save data as hdf5
+  filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-averaged".format(2, x=simulator.resource_behavior,
+                                                                               y=simulator.knapsack_solver)
+  if filetype == "hdf5" or filetype == "hdf5+csv":
+    f = h5py.File(filepath +"/data/"+ filename + ".hdf5", "w")
+    f.create_dataset("gas", data=gas_average, compression="gzip")
+    f.create_dataset("space", data=space_average, compression="gzip")
+    f.close()
+
+  if filetype == "csv" or filetype == "hdf5+csv":
+    # Save data as csv
+    df = pd.DataFrame({"gas": gas_average, "space": space_average})
+    df.to_csv(filepath +"/data/"+ filename + ".csv", index=False)
+
+  plt.rcParams["figure.figsize"] = (15, 10)
+  plt.title("Basefee over Time. {0:d} iterations".format(num_iterations))
+  plt.xlabel("Block Number")
+  plt.ylabel("Basefee (in Gwei)")
+  plt.plot(gas_average, label="gas")
+  plt.plot(space_average, label="space")
+  plt.legend(loc="upper left")
+  plt.savefig(filepath +"/figures/" + filename + ".png")
+  plt.show()
   
 # Plotting code
 
