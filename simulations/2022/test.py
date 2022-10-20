@@ -11,7 +11,7 @@ if __name__=="__main__":
     resources = [Resource("call_data","gamma",10,10),Resource("evm","gamma",10,10)]
     ratio = [0.5, 0.5]
 
-    sim = Simulator(basefee, resource_in, ratio)
+    sim = Simulator(basefee, [x.name for x in resources], ratio)
     demand = Demand(1000, 100, 51, 1000,resources=resources)
     # demand = Demand(1000, 100, 51, 1000)
     sim.simulate(demand)
