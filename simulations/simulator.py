@@ -31,6 +31,8 @@ class Resource():
           return self.lowerLimit
         else:
           return float(stats.gamma.rvs(self.alpha, scale=1 / self.beta, size=1))
+  def __str__(self):
+    return self.name
 
 class Demand():
   """ class for creating a demand profile """
@@ -68,7 +70,7 @@ class Demand():
         _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
         self.limits.append(_limits_sample)
       else:
-        self.limits.append(tuple(resource.generate() for resource in resources))
+        self.limits.append([tuple(resource.generate() for resource in resources) for x in range(txn_count)])
 
 class Basefee():
 
@@ -132,7 +134,7 @@ class Simulator():
     Make [txn_number] new transactions and add them to the mempool
     """
 
-    #
+    # checks if resources are manually placed in
     if demand.resources is not None:
       self.resource_behavior = "SEPARATED"
 
@@ -163,7 +165,7 @@ class Simulator():
       # assert self.resource_behavior == "SEPARATED"
       # Copy over generated values from demand
       for r in range(len(self.resources)):
-        limits[self.resources[r]] = _limits_sample[r]
+        limits[self.resources[r]] = [_limits_sample[i][r] for i in range(len(_limits_sample))]
 
     # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
     # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
@@ -363,8 +365,8 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
       created_files.append(filename + ".csv")
 
   # Take average of all files
-  gas_average = [0 for x in range(demand.step_count)]
-  space_average = [0 for x in range(demand.step_count)]
+  gas_average = [0 for x in range(demand.step_count+1)]
+  space_average = [0 for x in range(demand.step_count+1)]
   for filename in created_files:
     if filetype == "hdf5" or filetype == "hdf5+csv":
       f = h5py.File(filepath + "/data/" + filename, "r")
@@ -401,6 +403,8 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
   plt.legend(loc="upper left")
   plt.savefig(filepath +"/figures/" + filename + ".png")
   plt.show()
+
+  return gas_average, space_average
   
 # Plotting code
 

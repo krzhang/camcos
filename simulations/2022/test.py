@@ -9,11 +9,11 @@ if __name__=="__main__":
     b = basefee.scaled_copy(0.5)
     resource_in = ["call_data", "evm"]
     resources = [Resource("call_data","gamma",10,10),Resource("evm","gamma",10,10)]
-
     ratio = [0.5, 0.5]
 
     sim = Simulator(basefee, resource_in, ratio)
-    demand = Demand(1000, 100, 51, 1000)
+    demand = Demand(1000, 100, 51, 1000,resources=resources)
+    # demand = Demand(1000, 100, 51, 1000)
     sim.simulate(demand)
 
     # lenGenerated = 10
