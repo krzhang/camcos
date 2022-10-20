@@ -1,3 +1,5 @@
+import os
+
 from scipy import stats
 import random
 from simulations.simulator import Basefee, Simulator, Demand, Resource
@@ -6,6 +8,8 @@ if __name__=="__main__":
     basefee = Basefee(10000, 15000, 30000)
     b = basefee.scaled_copy(0.5)
     resource_in = ["call_data", "evm"]
+    resources = [Resource("call_data","gamma",10,10),Resource("evm","gamma",10,10)]
+
     ratio = [0.5, 0.5]
 
     sim = Simulator(basefee, resource_in, ratio)

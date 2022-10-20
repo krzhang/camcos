@@ -18,7 +18,7 @@ def load_data(filename, basefee_init, depth=100):
     initial basefee, since our data doesn't have basefee)
   """
   ### Temporary solution, block data is not read properly in python file path
-  directory = os.getcwd().removesuffix("2022")
+  directory = os.getcwd()[:len(os.getcwd())-4]
   data = pd.read_csv(directory+filename)
   df = data[['gasLimit', 'minGasPrice']].values # eventually we might find other things worthwhile
 
