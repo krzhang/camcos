@@ -6,17 +6,49 @@ import os
 import h5py
 import matplotlib.pyplot as plt
 import uuid
+from scipy import stats
 
 INFTY = 3000000
 MAX_LIMIT = 8000000
 
+# This is for the X+Y method of doing resources instead of Z=X+Y
+class Resource():
+  def __init__(self,name,distribution,alpha,beta,proportionLimit=None,lowerLimit = None):
+    self.name = name
+    self.distribution = distribution
+    self.alpha = alpha
+    self.beta = beta
+    self.proportionLimit = proportionLimit
+    self.lowerLimit = lowerLimit
+  def generate(self):
+    if self.distribution == "gamma":
+      if self.proportionLimit is None:
+        return float(stats.gamma.rvs(self.alpha, scale=1 / self.beta, size=1))
+      else:
+        ran = random.uniform(0, 1)
+        # ran2=random.uniform(0,1) #dont want to make mixture model for call data with 0s
+        if ran < self.proportionLimit:
+          return self.lowerLimit
+        else:
+          return float(stats.gamma.rvs(self.alpha, scale=1 / self.beta, size=1))
+  def __str__(self):
+    return self.name
+
 class Demand():
   """ class for creating a demand profile """
 
-  def __init__(self, init_txns, txns_per_turn, step_count, basefee_init):
+  def __init__(self, init_txns, txns_per_turn, step_count, basefee_init, resources = None):
     self.valuations = []
     self.limits = []
     self.step_count = step_count
+    self.resources = resources
+
+    # Check if resources is a list of class resources
+    if resources is not None:
+      assert isinstance(resources,list)
+      for i in resources:
+        assert (isinstance(i, Resource))
+
     for i in range(step_count+1):
       # we add 1 since there's just also transactions to begin with
       if i == 0:
@@ -31,10 +63,14 @@ class Demand():
 
       self.valuations.append(np.random.gamma(20.72054, 1/17.49951, txn_count))
 
-      # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
-      _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
-      _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
-      self.limits.append(_limits_sample)
+      # Previous code
+      if resources is None:
+        # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
+        _limits_sample = (np.random.pareto(1.42150, txn_count)+1)*21000
+        _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
+        self.limits.append(_limits_sample)
+      else:
+        self.limits.append([tuple(resource.generate() for resource in resources) for x in range(txn_count)])
 
 class Basefee():
 
@@ -97,6 +133,11 @@ class Simulator():
     """
     Make [txn_number] new transactions and add them to the mempool
     """
+
+    # checks if resources are manually placed in
+    if demand.resources is not None:
+      self.resource_behavior = "SEPARATED"
+
     # the valuations and gas limits for the transactions. Following code from
     # 2021S
     prices = {}
@@ -121,7 +162,10 @@ class Simulator():
         limits[r] = [min(g*new_ratios[r], self.basefee[r].max_limit)
                      for g in _limits_sample]
     else:
-      assert self.resource_behavior == "SEPARATED"
+      # assert self.resource_behavior == "SEPARATED"
+      # Copy over generated values from demand
+      for r in range(len(self.resources)):
+        limits[self.resources[r]] = [_limits_sample[i][r] for i in range(len(_limits_sample))]
 
     # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
     # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
@@ -321,8 +365,8 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
       created_files.append(filename + ".csv")
 
   # Take average of all files
-  gas_average = [0 for x in range(demand.step_count)]
-  space_average = [0 for x in range(demand.step_count)]
+  gas_average = [0 for x in range(demand.step_count+1)]
+  space_average = [0 for x in range(demand.step_count+1)]
   for filename in created_files:
     if filetype == "hdf5" or filetype == "hdf5+csv":
       f = h5py.File(filepath + "/data/" + filename, "r")
@@ -359,6 +403,8 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
   plt.legend(loc="upper left")
   plt.savefig(filepath +"/figures/" + filename + ".png")
   plt.show()
+
+  return gas_average, space_average
   
 # Plotting code
 
