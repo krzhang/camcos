@@ -329,17 +329,23 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
     os.mkdir(filepath+"/data/")
 
   created_files = []
+  averages = [[0 for x in range(demand.step_count + 1)] for i in range(simulator.dimension)]
 
   for i in range(num_iterations):
     basefees_data, block_data, mempools_data = simulator.simulate(demand)
 
+    shift_count = 0
+    for i in range(simulator.dimension):
+      # Pre-process data to make it look visible on plot
+      basefees_data[str(simulator.resources[i])] = [i + shift_count for i in basefees_data[str(simulator.resources[i])]]
+      averages[i] = np.add(averages[i], basefees_data[str(simulator.resources[i])])
+    
     plt.rcParams["figure.figsize"] = (15, 10)
     plt.title("Basefee over Time")
     plt.xlabel("Block Number")
     plt.ylabel("Basefee (in Gwei)")
-    plt.plot(basefees_data["gas"], label="gas")
-    basefees_data_space = [x + 1 for x in basefees_data["space"]]
-    plt.plot(basefees_data_space, label="space")
+    for x in simulator.resources:
+      plt.plot(basefees_data[x], label=str(x))
     plt.legend(loc="upper left")
     # plt.show()
 
@@ -354,58 +360,47 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
 
     if filetype == "hdf5" or filetype == "hdf5+csv":
       f = h5py.File(filepath+"/data/" + filename + ".hdf5", "w")
-      f.create_dataset("gas", data=basefees_data["gas"], compression="gzip")
-      f.create_dataset("space", data=basefees_data_space, compression="gzip")
+      for x in simulator.resources:
+        f.create_dataset(x, data=basefees_data[x], compression="gzip")
       f.close()
       print("Saving hdf5 as "+ filename+".hdf5")
       created_files.append(filename + ".hdf5")
     if filetype == "csv" or filetype == "hdf5+csv":
-      df = pd.DataFrame({"gas": basefees_data["gas"], "space": basefees_data_space})
+      df = pd.DataFrame({str(x):basefees_data[x] for x in simulator.resources})
       df.to_csv(filepath + "/data/" +filename + ".csv", index=False)
       print("Saving csv as " + filename + ".csv")
       created_files.append(filename + ".csv")
 
   # Take average of all files
-  gas_average = [0 for x in range(demand.step_count+1)]
-  space_average = [0 for x in range(demand.step_count+1)]
-  for filename in created_files:
-    if filetype == "hdf5" or filetype == "hdf5+csv":
-      f = h5py.File(filepath + "/data/" + filename, "r")
-      gas_average = np.add(gas_average, list(f["gas"]))
-      space_average = np.add(space_average, list(f["space"]))
-    else:
-      df = pd.read_csv(filepath+"/data/"+filename)
-      gas_average = np.add(gas_average, df["gas"])
-      space_average = np.add(space_average, df["space"])
-
-  gas_average = [x / num_iterations for x in gas_average]
-  space_average = [x / num_iterations for x in space_average]
+  
+  for i in range(len(averages)):
+    averages[i] = [x / num_iterations for x in averages[i]]
 
   # Save data as hdf5
   filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-averaged".format(2, x=simulator.resource_behavior,
                                                                                y=simulator.knapsack_solver)
   if filetype == "hdf5" or filetype == "hdf5+csv":
     f = h5py.File(filepath +"/data/"+ filename + ".hdf5", "w")
-    f.create_dataset("gas", data=gas_average, compression="gzip")
-    f.create_dataset("space", data=space_average, compression="gzip")
+    for i in range(simulator.dimension):
+      f.create_dataset(simulator.resources[i], data=averages[i], compression="gzip")
     f.close()
 
   if filetype == "csv" or filetype == "hdf5+csv":
     # Save data as csv
-    df = pd.DataFrame({"gas": gas_average, "space": space_average})
+    df = pd.DataFrame({str(simulator.resources[i]):averages[i] for i in range(simulator.dimension)})
     df.to_csv(filepath +"/data/"+ filename + ".csv", index=False)
 
   plt.rcParams["figure.figsize"] = (15, 10)
   plt.title("Basefee over Time. {0:d} iterations".format(num_iterations))
   plt.xlabel("Block Number")
   plt.ylabel("Basefee (in Gwei)")
-  plt.plot(gas_average, label="gas")
-  plt.plot(space_average, label="space")
+  for i in range(simulator.dimension):
+    plt.plot(averages[i],label = str(simulator.resources[i]))
   plt.legend(loc="upper left")
   plt.savefig(filepath +"/figures/" + filename + ".png")
   plt.show()
 
-  return gas_average, space_average
+  return averages
   
 # Plotting code
 
