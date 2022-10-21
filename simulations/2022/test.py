@@ -2,7 +2,7 @@ import os
 
 from scipy import stats
 import random
-from simulations.simulator import Basefee, Simulator, Demand, Resource
+from simulations.simulator import Basefee, Simulator, Demand, Resource, generate_simulation
 
 if __name__=="__main__":
     basefee = Basefee(10000, 15000, 30000)
@@ -11,10 +11,12 @@ if __name__=="__main__":
     resources = [Resource("call_data","gamma",10,10),Resource("evm","gamma",10,10)]
     ratio = [0.5, 0.5]
 
-    sim = Simulator(basefee, [x.name for x in resources], ratio)
+    sim = Simulator(basefee, resources, ratio)
     demand = Demand(1000, 100, 51, 1000,resources=resources)
     # demand = Demand(1000, 100, 51, 1000)
     sim.simulate(demand)
+
+    generate_simulation(sim,demand,2,filetype="hdf5+csv")
 
     # lenGenerated = 10
     # TxGasGenerated = []
