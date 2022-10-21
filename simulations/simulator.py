@@ -102,6 +102,7 @@ class Simulator():
     relative values
     """
     assert len(ratio) == len(resources)
+    resources = [str(x) for x in resources] # ensures everything is a string
     self.resources = resources
     self.dimension = len(resources) # number of resources
     self.resource_behavior = resource_behavior
