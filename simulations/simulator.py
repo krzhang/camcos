@@ -14,6 +14,7 @@ MAX_LIMIT = 8000000
 
 # This is for the X+Y method of doing resources instead of Z=X+Y
 class Resource():
+  # maybe have better docstrings?
   def __init__(self,name,distribution,alpha,beta,proportionLimit=None,lowerLimit = None):
     self.name = name
     self.distribution = distribution
@@ -36,7 +37,13 @@ class Resource():
     return self.name
 
 class Demand():
-  """ class for creating a demand profile """
+  """ 
+  class for creating a demand profile. A demand profile consists of (in lock-step)
+
+  1) a sequence of valuations
+  2) a sequence of gas limits
+  3) a sequence of resources
+  """
 
   def __init__(self, init_txns, txns_per_turn, step_count, basefee_init, resources = None):
     self.valuations = []
@@ -94,7 +101,6 @@ class Basefee():
 
 
 class Simulator():
-
   """ Multidimensional EIP-1559 simulator. """
 
   def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT",knapsack_solver=None):
@@ -211,7 +217,6 @@ class Simulator():
     # we now do a greedy algorithm to fill the block.
 
     # 1. we sort transactions in each mempool by total value in descending order
-
 
     self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis = 1)
     if method == "greedy":
@@ -402,74 +407,3 @@ def generate_simulation(simulator, demand, num_iterations, filetype=None, filepa
   plt.show()
 
   return averages
-  
-# Plotting code
-
-# sq_mempool_sizes_gl = [sum(x["gas limit"]) for x in sq_mempools_data]
-# eip_mempool_sizes_bf_gl = [sum(x["gas limit"]) for x in eip_mempools_bf_data]
-
-# plt.title("Mempool Sizes (Total Gas in Mempool)")
-# plt.xlabel("Block Number")
-# plt.ylabel("Total Gas")
-# plt.plot(eip_mempool_sizes_bf_gl, label="eip-1559")
-# plt.plot(sq_mempool_sizes_gl, label="status quo")
-# plt.legend(loc="upper left")
-
-# sq_mempool_sizes = [len(x) for x in sq_mempools_data]
-# eip_mempool_sizes_bf = [len(x) for x in eip_mempools_bf_data]
-
-# plt.title("Mempool Sizes (Total Txns in Mempool)")
-# plt.xlabel("Block Number")
-# plt.ylabel("# of Txns")
-# plt.plot(eip_mempool_sizes_bf, label="eip-1559")
-# plt.plot(sq_mempool_sizes, label="status quo")
-# plt.legend(loc="upper left")
-
-# eip_mempool_lrevs = [sum(i["amount paid"]) for i in eip_mempools_bf_data]
-# sq_mempool_lrevs = [sum(i["amount paid"]) for i in sq_mempools_data]
-
-
-# eip_ratios = []
-# sq_ratios = []
-
-# for i in range(len(sq_blocks_data) // 100):
-#     eip_section = eip_wait_times[i*100:(i+1)*100]
-#     sq_section = sq_wait_times[i*100:(i+1)*100]
-    
-#     eip_average = sum([sum(x) for x in eip_section]) / 100
-#     sq_average = sum([sum(x) for x in sq_section]) / 100
-    
-#     X_sq = sum([sum([x for x in y if x <= sq_average ]) for y in sq_section])
-#     X_eip = sum([sum([x for x in y if x <= eip_average]) for y in eip_section])
-    
-#     sq_waiting = len(sq_mempools_data[100*(i+1) - 1])
-#     eip_waiting = len(eip_mempools_data[100*(i+1) - 1])
-    
-#     Y_sq = sum([sum([x for x in y if x > sq_average ]) for y in sq_section]) + sq_waiting
-#     Y_eip = sum([sum([x for x in y if x > eip_average]) for y in eip_section]) + eip_waiting
-    
-#     eip_ratios.append(X_eip / Y_eip)
-#     sq_ratios.append(X_sq / Y_sq)
-
-# plt.title("Time Waiting Ratios")
-# plt.xlabel("Block")
-# plt.ylabel("Ratio")
-# plt.plot([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], eip_ratios, label="eip-1559")
-# plt.plot([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], sq_ratios, label="status quo")
-# plt.legend(loc="upper left")
-
-# eip_avg_wait = [sum(x)/len(x) for x in eip_wait_times]
-# sq_avg_wait = [sum(x)/len(x) for x in sq_wait_times]
-
-# eip_rolling_avg = [sum(eip_avg_wait[i*10 : (i+1)*10]) / 10 for i in range(len(eip_avg_wait) // 10)]
-# sq_rolling_avg = [sum(sq_avg_wait[i*10 : (i+1)*10]) / 10 for i in range(len(sq_avg_wait) // 10)]
-
-# wait_ratios = [y // x for x, y in zip(eip_rolling_avg, sq_rolling_avg)]
-
-# plt.title("Average Wait Times")
-# plt.xlabel("Block")
-# plt.ylabel("Wait Times")
-# plt.plot([i*10 for i in range(100)], eip_rolling_avg, label="eip-1559")
-# plt.plot([i*10 for i in range(100)], sq_rolling_avg, label="status quo")
-# # plt.plot([i*10 for i in range(100)], wait_ratios, label="status quo / eip")
-# plt.legend(loc="upper left")
