@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
-from simulations import oracle
+
+import oracle
 import os
 import h5py
 import matplotlib.pyplot as plt

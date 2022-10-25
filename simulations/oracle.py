@@ -1,6 +1,7 @@
 import pandas as pd
 # from collections import deque
 import os
+import settings
 
 DEFAULT_ORACLE_INDEX = 60 # current geth oracle looks at the 60th smallest 
 
@@ -18,8 +19,10 @@ def load_data(filename, basefee_init, depth=100):
     initial basefee, since our data doesn't have basefee)
   """
   ### Temporary solution, block data is not read properly in python file path
-  directory = os.getcwd()[:len(os.getcwd())-4]
-  data = pd.read_csv(directory+filename)
+  # directory = os.getcwd()[:len(os.getcwd())-4]
+  directory = settings.DATA_PATH
+  print(directory)
+  data = pd.read_csv(str(directory / filename))
   df = data[['gasLimit', 'minGasPrice']].values # eventually we might find other things worthwhile
 
   basefees = []
@@ -39,7 +42,8 @@ def load_data(filename, basefee_init, depth=100):
 class Oracle():
   """ Handler for all oracle (e.g. Geth) related logic. Handles muilti-dimensional EIP-1559. """
 
-  def __init__(self, resources, ratio, basefee_init, filename="block_data.csv", gas_prices = None):
+  def __init__(self, resources, ratio, basefee_init,
+               filename="block_data.csv", gas_prices = None):
     """ 
     read in data to initialize oracle. The main object is [block_mins], a list of block minimums
     for future oracle updates.
