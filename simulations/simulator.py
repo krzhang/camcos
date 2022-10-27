@@ -22,17 +22,11 @@ class Resource():
     self.beta = beta
     self.proportionLimit = proportionLimit
     self.lowerLimit = lowerLimit
+
+  @abstractmethod
   def generate(self):
-    if self.distribution == "gamma":
-      if self.proportionLimit is None:
-        return float(stats.gamma.rvs(self.alpha, scale=1 / self.beta, size=1))
-      else:
-        ran = random.uniform(0, 1)
-        # ran2=random.uniform(0,1) #dont want to make mixture model for call data with 0s
-        if ran < self.proportionLimit:
-          return self.lowerLimit
-        else:
-          return float(stats.gamma.rvs(self.alpha, scale=1 / self.beta, size=1))
+    pass
+  
   def __str__(self):
     return self.name
 
