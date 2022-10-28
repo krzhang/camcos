@@ -1,5 +1,6 @@
 import copy
 from abc import abstractmethod
+from typing import List,Optional
 
 import numpy as np
 import pandas as pd
@@ -19,14 +20,11 @@ MAX_LIMIT = 8000000
 # This is for the X+Y method of doing resources instead of Z=X+Y
 
 class Resource():
-    # maybe have better docstrings?
-    def __init__(self, name, distribution, alpha, beta, proportionLimit=None, lowerLimit=None):
+    """
+    class for creating a resource profile. This can be passed in to Demand and Simulator class
+    """
+    def __init__(self, name):
         self.name = name
-        self.distribution = distribution
-        self.alpha = alpha
-        self.beta = beta
-        self.proportionLimit = proportionLimit
-        self.lowerLimit = lowerLimit
 
     @abstractmethod
     def generate(self):
@@ -35,7 +33,38 @@ class Resource():
     def __str__(self):
         return self.name
 
+class Resources():
+    """
+    Super class of multiple resources. Generate function should return a dictionary of {resource:[values]}. This can be passed in to Demand and Simulator class
+    """
+    def __init__(self,resource_names: List[str],resource_behavior):
+        self.resource_names = [str(x) for x in resource_names]
+        self.dimension = len(self.resource_names)
+        self.resource_behavior = resource_behavior
 
+    @abstractmethod
+    def generate(self):
+        pass
+
+class Independent_Resources(Resources):
+    def __init__(self, basefee_max_limit,ratio):
+        self.basefee_max_limit = basefee_max_limit
+        self.ratio = ratio
+
+    def generate(self):
+        # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
+        _limits_sample = (np.random.pareto(1.42150, 1) + 1) * 21000
+        _limits_sample = min(_limits_sample[0], MAX_LIMIT)
+
+        # Twiddle ratio code
+        new_ratios = {x: random.uniform(0.0, self.ratio[x]) for x in self.ratio}
+        normalization = sum(new_ratios[x] for x in new_ratios)
+        newer_ratios = {x: new_ratios[x] / normalization for x in self.ratio}
+
+        limits = []
+        for r in self.resource_names:
+            limits.append(min(_limits_sample * newer_ratios[r], self.basefee_max_limit[r]))
+        return limits
 
 
 class Demand():
@@ -47,17 +76,11 @@ class Demand():
   3) a sequence of resources
   """
 
-    def __init__(self, init_txns, txns_per_turn, step_count, basefee_init, resources=None):
+    def __init__(self, init_txns, txns_per_turn, step_count, basefee_init, resources: Resources):
         self.valuations = []
         self.limits = []
         self.step_count = step_count
         self.resources = resources
-
-        # Check if resources is a list of class resources
-        if resources is not None:
-            assert isinstance(resources, list)
-            for i in resources:
-                assert (isinstance(i, Resource))
 
         for i in range(step_count + 1):
             # we add 1 since there's just also transactions to begin with
@@ -72,16 +95,8 @@ class Demand():
             # in particular, these people don't use a price oracle!
 
             self.valuations.append(np.random.gamma(20.72054, 1 / 17.49951, txn_count))
-
-            # Previous code
-            if resources is None:
-                # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
-                _limits_sample = (np.random.pareto(1.42150, txn_count) + 1) * 21000
-                _limits_sample = [min(l, MAX_LIMIT) for l in _limits_sample]
-                self.limits.append(_limits_sample)
-            else:
-                self.limits.append([tuple(resource.generate() for resource in resources) for x in range(txn_count)])
-
+            # self.limits.append([tuple(resource.generate() for resource in resources) for x in range(txn_count)])
+            self.limits.append([tuple(resources.generate()) for x in range(txn_count)])
 
 class Basefee():
 
@@ -145,10 +160,6 @@ class Simulator():
         """
     Make [txn_number] new transactions and add them to the mempool
     """
-
-        # checks if resources are manually placed in
-        if demand.resources is not None:
-            self.resource_behavior = "SEPARATED"
 
         # the valuations and gas limits for the transactions. Following code from
         # 2021S
@@ -433,6 +444,7 @@ def run_simulations(simulator, demand, num_iterations, filetype=None, filepath=N
     :returns averaged_data: Average of basefees of each resource over num_iterations
     """
     averaged_data, outputs = generate_simulation_data(simulator, demand, num_iterations)
+    # Plot and save individual plots
     for count in range(len(outputs)):
         uniqueid = str(uuid.uuid1()).rsplit("-")[0]
         filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-{uuid}".format(simulator.dimension,
