@@ -17,6 +17,7 @@ MAX_LIMIT = 8000000
 
 
 # This is for the X+Y method of doing resources instead of Z=X+Y
+
 class Resource():
     # maybe have better docstrings?
     def __init__(self, name, distribution, alpha, beta, proportionLimit=None, lowerLimit=None):
@@ -33,6 +34,8 @@ class Resource():
 
     def __str__(self):
         return self.name
+
+
 
 
 class Demand():
@@ -338,7 +341,7 @@ def generate_simulation_data(simulator, demand, num_iterations):
         new_simulator = copy.deepcopy(simulator)
         basefees_data, block_data, mempools_data = new_simulator.simulate(demand)
         outputs.append(
-            tuple({"basefees_data": basefees_data, "block_data": block_data, "mempools_data": mempools_data}))
+            {"basefees_data": basefees_data, "block_data": block_data, "mempools_data": mempools_data})
 
         # Shift entire y-axis by 1 unit, so it will be visible on plot in case it overlaps
         shift_count = 0
@@ -353,7 +356,7 @@ def generate_simulation_data(simulator, demand, num_iterations):
     for i in range(len(averages)):
         averages[i] = [x / num_iterations for x in averages[i]]
 
-    averaged_data = {simulator.resources[key]: averages[key] for key in range(simulator.dimensions)}
+    averaged_data = {simulator.resources[key]: averages[key] for key in range(simulator.dimension)}
     return averaged_data, outputs
 
 
@@ -370,7 +373,7 @@ def save_simulation_data(data: dict, filename, filetype=None, filepath=None):
         filetype = "hdf5"
     assert filetype == "hdf5" or filetype == "csv" or filetype == "hdf5+csv"
     if filepath is None:
-        filepath = os.getcwd() + "/simulation_data/"
+        filepath = os.getcwd()
         if not os.path.exists(filepath):
             os.mkdir(filepath)
     if not os.path.exists(filepath + "/data/"):
@@ -400,7 +403,7 @@ def plot_simulation(data: dict, filename, title, x_label, y_label, show=False, f
     :param filepath: String of directory
     """
     if filepath is None:
-        filepath = os.getcwd() + "/simulation_data/"
+        filepath = os.getcwd()
         if not os.path.exists(filepath):
             os.mkdir(filepath)
     if not os.path.exists(filepath + "/figures/"):
@@ -416,9 +419,19 @@ def plot_simulation(data: dict, filename, title, x_label, y_label, show=False, f
     print("Saving figure as " + filename)
     if show:
         plt.show()
+    plt.cla()
 
 
 def run_simulations(simulator, demand, num_iterations, filetype=None, filepath=None):
+    """
+    This function creates data, saves it and plots the average and all individual plots
+    :param simulator: Accepts Simulator object
+    :param demand: Accepts Demand object
+    :param num_iterations: int of number of iterations averaged over
+    :param filetype: Will be passed into generate_simulation_data
+    :param filepath: Will be passed into generate_simulation_data
+    :returns averaged_data: Average of basefees of each resource over num_iterations
+    """
     averaged_data, outputs = generate_simulation_data(simulator, demand, num_iterations)
     for count in range(len(outputs)):
         uniqueid = str(uuid.uuid1()).rsplit("-")[0]
@@ -434,94 +447,4 @@ def run_simulations(simulator, demand, num_iterations, filetype=None, filepath=N
                                                                                  y=simulator.knapsack_solver)
     save_simulation_data(averaged_data, filename, filetype, filepath)
     plot_simulation(averaged_data,filename,"Basefee over Time. {0:d} iterations".format(num_iterations),"Block Number","Basefee (in Gwei)",show=True,filepath=filepath)
-
-def generate_simulation(simulator, demand, num_iterations, filetype=None, filepath=None):
-    # Input checking and processing
-    if filetype is None:
-        filetype = "hdf5"
-    assert filetype == "hdf5" or filetype == "csv" or filetype == "hdf5+csv"
-    if filepath is None:
-        filepath = os.getcwd() + "/generated_data/"
-        if not os.path.exists(filepath):
-            os.mkdir(filepath)
-
-    # Create file path if does not exist
-
-    if not os.path.exists(filepath + "/data/"):
-        os.mkdir(filepath + "/data/")
-
-    created_files = []
-    averages = [[0 for x in range(demand.step_count + 1)] for i in range(simulator.dimension)]
-
-    for i in range(num_iterations):
-        basefees_data, block_data, mempools_data = simulator.simulate(demand)
-
-        shift_count = 0
-        for i in range(simulator.dimension):
-            # Pre-process data to make it look visible on plot by shifting y-value by 1
-            basefees_data[str(simulator.resources[i])] = [i + shift_count for i in
-                                                          basefees_data[str(simulator.resources[i])]]
-            averages[i] = np.add(averages[i], basefees_data[str(simulator.resources[i])])
-            shift_count += 1
-
-        plt.rcParams["figure.figsize"] = (15, 10)
-        plt.title("Basefee over Time")
-        plt.xlabel("Block Number")
-        plt.ylabel("Basefee (in Gwei)")
-        for x in simulator.resources:
-            plt.plot(basefees_data[x], label=str(x))
-        plt.legend(loc="upper left")
-
-        # File saving
-        uniqueid = str(uuid.uuid1()).rsplit("-")[0]
-        filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-{uuid}".format(simulator.dimension,
-                                                                                   x=simulator.resource_behavior,
-                                                                                   y=simulator.knapsack_solver,
-                                                                                   uuid=uniqueid)
-
-        plt.savefig(filepath + "/figures/" + filename + ".png")
-        plt.cla()
-
-        if filetype == "hdf5" or filetype == "hdf5+csv":
-            f = h5py.File(filepath + "/data/" + filename + ".hdf5", "w")
-            for x in simulator.resources:
-                f.create_dataset(x, data=basefees_data[x], compression="gzip")
-            f.close()
-            print("Saving hdf5 as " + filename + ".hdf5")
-            created_files.append(filename + ".hdf5")
-        if filetype == "csv" or filetype == "hdf5+csv":
-            df = pd.DataFrame({str(x): basefees_data[x] for x in simulator.resources})
-            df.to_csv(filepath + "/data/" + filename + ".csv", index=False)
-            print("Saving csv as " + filename + ".csv")
-            created_files.append(filename + ".csv")
-
-    # Take average of all files
-
-    for i in range(len(averages)):
-        averages[i] = [x / num_iterations for x in averages[i]]
-
-    # Save data as hdf5
-    filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-averaged".format(2, x=simulator.resource_behavior,
-                                                                                 y=simulator.knapsack_solver)
-    if filetype == "hdf5" or filetype == "hdf5+csv":
-        f = h5py.File(filepath + "/data/" + filename + ".hdf5", "w")
-        for i in range(simulator.dimension):
-            f.create_dataset(simulator.resources[i], data=averages[i], compression="gzip")
-        f.close()
-
-    if filetype == "csv" or filetype == "hdf5+csv":
-        # Save data as csv
-        df = pd.DataFrame({str(simulator.resources[i]): averages[i] for i in range(simulator.dimension)})
-        df.to_csv(filepath + "/data/" + filename + ".csv", index=False)
-
-    plt.rcParams["figure.figsize"] = (15, 10)
-    plt.title("Basefee over Time. {0:d} iterations".format(num_iterations))
-    plt.xlabel("Block Number")
-    plt.ylabel("Basefee (in Gwei)")
-    for i in range(simulator.dimension):
-        plt.plot(averages[i], label=str(simulator.resources[i]))
-    plt.legend(loc="upper left")
-    plt.savefig(filepath + "/figures/" + filename + ".png")
-    plt.show()
-
-    return averages
+    return averaged_data
