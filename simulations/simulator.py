@@ -61,9 +61,9 @@ class Independent_Resources(Resources):
         normalization = sum(new_ratios[x] for x in new_ratios)
         newer_ratios = {x: new_ratios[x] / normalization for x in self.ratio}
 
-        limits = []
+        limits = {}
         for r in self.resource_names:
-            limits.append(min(_limits_sample * newer_ratios[r], self.basefee_max_limit[r]))
+            limits[r] = min(_limits_sample * newer_ratios[r], self.basefee_max_limit[r])
         return limits
 
 
@@ -174,21 +174,21 @@ class Simulator():
         limits = {}
         _limits_sample = demand.limits[t]
 
-        if self.resource_behavior == "CORRELATED":
-            for r in self.resources:
-                limits[r] = [min(g * self.ratio[r], self.basefee[r].max_limit)
-                             for g in _limits_sample]
-            # this is completely correlated, so it really shouldn't affect basefee behavior
-        elif self.resource_behavior == "INDEPENDENT":
-            new_ratios = self._twiddle_ratio()
-            for r in self.resources:
-                limits[r] = [min(g * new_ratios[r], self.basefee[r].max_limit)
-                             for g in _limits_sample]
-        else:
+        # if self.resource_behavior == "CORRELATED":
+        #     for r in self.resources:
+        #         limits[r] = [min(g * self.ratio[r], self.basefee[r].max_limit)
+        #                      for g in _limits_sample]
+        #     # this is completely correlated, so it really shouldn't affect basefee behavior
+        # elif self.resource_behavior == "INDEPENDENT":
+        #     new_ratios = self._twiddle_ratio()
+        #     for r in self.resources:
+        #         limits[r] = [min(g * new_ratios[r], self.basefee[r].max_limit)
+        #                      for g in _limits_sample]
+        # else:
             # assert self.resource_behavior == "SEPARATED"
             # Copy over generated values from demand
-            for r in range(len(self.resources)):
-                limits[self.resources[r]] = [_limits_sample[i][r] for i in range(len(_limits_sample))]
+        for r in range(len(self.resources)):
+            limits[self.resources[r]] = [_limits_sample[i][r] for i in range(len(_limits_sample))]
 
         # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
         # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
