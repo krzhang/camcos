@@ -31,7 +31,12 @@ class Demand():
         self.txns_per_turn = txns_per_turn
         self.resources = resources
 
-    def update(self):
+    def update(self,t):
+        """
+        Updates a new list of transactions and stores them in valuations and limits
+        :param t: int of time
+        """
+        self.t = t
         if self.t == 0:
             txn_count = init_txns
         else:
@@ -74,25 +79,31 @@ class Basefee():
 class Simulator():
     """ Multidimensional EIP-1559 simulator. """
 
-    def __init__(self, basefee, resources, knapsack_solver=None):
+    def __init__(self, basefee:Basefee, demand:Demand, knapsack_solver=None):
         """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
     """
-        resources = [str(x) for x in resources]  # ensures everything is a string
+        resource_package = demand.resources
+        resources = [str(x) for x in resource_package.resource_names]  # ensures everything is a string
         self.resources = resources
         self.dimension = len(resources)  # number of resources
+        self.demand = demand
+        self.capped = demand.resources.capped
 
         if knapsack_solver is None:
             self.knapsack_solver = "greedy"
         self.knapsack_solver = knapsack_solver
 
+
         # everything else we use is basically a dictionary indexed by the resource names
-        self.ratio = {resources[i]: ratio[i] for i in range(self.dimension)}
+
         self.basefee = {}
         self.basefee_init = basefee.value
-        for r in self.resources:
-            self.basefee[r] = basefee.scaled_copy(self.ratio[r])
+        if self.capped:
+            self.ratio = {i: resource_package.ratio[i] for i in resources}
+            for r in self.resources:
+                self.basefee[r] = basefee.scaled_copy(self.ratio[r])
 
         self.mempool = pd.DataFrame([])
 
@@ -116,7 +127,7 @@ class Simulator():
         # 2021S
         prices = {}
 
-        demand.update()
+        demand.update(t)
         _valuations = demand.valuations
         txn_count = len(_valuations)
 
