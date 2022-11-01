@@ -24,29 +24,32 @@ class Demand():
   3) a sequence of resources
   """
 
-    def __init__(self, init_txns, txns_per_turn, step_count, resources: ResourcePackage):
+    def __init__(self, init_txns,t, txns_per_turn, resources: ResourcePackage):
         self.valuations = []
         self.limits = {}
-        self.step_count = step_count
+        self.t = t
+        self.txns_per_turn = txns_per_turn
         self.resources = resources
 
-        for i in range(step_count + 1):
-            # we add 1 since there's just also transactions to begin with
-            if i == 0:
-                txn_count = init_txns
-            else:
-                txn_count = random.randint(50, txns_per_turn * 2 - 50)
+    def update(self):
+        if self.t == 0:
+            txn_count = init_txns
+        else:
+            txn_count = random.randint(50, self.txns_per_turn * 2 - 50)
 
-            # the mean for gamma(k, \theta) is k\theta, so the mean is a bit above 1.
-            # note we use the initial value as a proxy for a "fair" basefee; we don't want people to
-            # arbitrarily follow higher basefee, then it will spiral out of control
-            # in particular, these people don't use a price oracle!
+        # the mean for gamma(k, \theta) is k\theta, so the mean is a bit above 1.
+        # note we use the initial value as a proxy for a "fair" basefee; we don't want people to
+        # arbitrarily follow higher basefee, then it will spiral out of control
+        # in particular, these people don't use a price oracle!
 
-            self.valuations.append(np.random.gamma(20.72054, 1 / 17.49951, txn_count))
-            # self.limits.append([tuple(resource.generate() for resource in resources) for x in range(txn_count)])
-            # self.limits.append([tuple(resources.generate()) for x in range(txn_count)])
-            for r in resources:
-                self.limits[r].append(r.generate())
+        self.valuations = np.random.gamma(20.72054, 1 / 17.49951, txn_count)
+        for r in self.resources.resource_names:
+            self.limits[r] = []
+        for i in range(txn_count):
+            generated_resource = self.resources.generate()
+            for r in self.resources.resource_names:
+                self.limits[r].append(generated_resource[r])
+
 
 class Basefee():
 
@@ -71,16 +74,14 @@ class Basefee():
 class Simulator():
     """ Multidimensional EIP-1559 simulator. """
 
-    def __init__(self, basefee, resources, ratio, resource_behavior="INDEPENDENT", knapsack_solver=None):
+    def __init__(self, basefee, resources, knapsack_solver=None):
         """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
     """
-        assert len(ratio) == len(resources)
         resources = [str(x) for x in resources]  # ensures everything is a string
         self.resources = resources
         self.dimension = len(resources)  # number of resources
-        self.resource_behavior = resource_behavior
 
         if knapsack_solver is None:
             self.knapsack_solver = "greedy"
@@ -106,7 +107,7 @@ class Simulator():
         newer_ratios = {x: new_ratios[x] / normalization for x in ratio}
         return newer_ratios
 
-    def update_mempool(self, demand, t):
+    def update_mempool(self, demand: Demand, t):
         """
     Make [txn_number] new transactions and add them to the mempool
     """
@@ -115,30 +116,14 @@ class Simulator():
         # 2021S
         prices = {}
 
-        _valuations = demand.valuations[t]
+        demand.update()
+        _valuations = demand.valuations
         txn_count = len(_valuations)
 
         for r in self.resources:
             prices[r] = [self.basefee_init * v for v in _valuations]
 
-        limits = {}
-        _limits_sample = demand.limits[t]
-
-        # if self.resource_behavior == "CORRELATED":
-        #     for r in self.resources:
-        #         limits[r] = [min(g * self.ratio[r], self.basefee[r].max_limit)
-        #                      for g in _limits_sample]
-        #     # this is completely correlated, so it really shouldn't affect basefee behavior
-        # elif self.resource_behavior == "INDEPENDENT":
-        #     new_ratios = self._twiddle_ratio()
-        #     for r in self.resources:
-        #         limits[r] = [min(g * new_ratios[r], self.basefee[r].max_limit)
-        #                      for g in _limits_sample]
-        # else:
-            # assert self.resource_behavior == "SEPARATED"
-            # Copy over generated values from demand
-        for r in range(len(self.resources)):
-            limits[self.resources[r]] = [_limits_sample[i][r] for i in range(len(_limits_sample))]
+        limits = demand.limits
 
         # store each updated mempool as a DataFrame. Here, each *row* will be a transaction.
         # we will start with 2*[dimension] columns corresponding to prices and limits, then 2
@@ -223,7 +208,7 @@ class Simulator():
 
         return block, block_size, block_min_tip
 
-    def simulate(self, demand):
+    def simulate(self, demand:Demand, step_count):
         """ Run the simulation for n steps """
 
         # initialize empty dataframes
@@ -238,8 +223,6 @@ class Simulator():
         min_tips = {r: [] for r in self.resources}
         # initialize mempools
         self.update_mempool(demand, 0)  # the 0-th slot for demand is initial transactions
-
-        step_count = len(demand.valuations) - 1
 
         # iterate over n blocks
         for i in range(step_count):

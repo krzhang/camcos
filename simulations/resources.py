@@ -4,6 +4,9 @@ import numpy as np
 import random
 from scipy import stats
 from constants import MAX_LIMIT, INFTY
+from settings import DATA_PATH
+import pandas as pd
+from bisect import bisect
 
 class ResourcePackage(ABC):
     """
@@ -196,9 +199,31 @@ class Individual_Resources(ResourcePackage):
         return limits
 
 class Joint_Resources(ResourcePackage):
-    def __init__(self,resource_names: List[BasicResource]):
-        self.resource_package = resource_names
-        super().__init__(resource_names,"JOINT",False)
+    """
+    Adam's code. Reads in csv from
+    """
+
+    def __init__(self,resource_names: List[str]):
+        # self.resource_package = resource_names
+        self.resource_package = ["gas","call_data"]
+        super().__init__(self.resource_package,"JOINT",False)
 
     def generate(self):
-        pass
+        df = pd.read_csv(str(DATA_PATH)+"/specialGeneration.csv")
+        rand = random.random()
+        ### Temporary solution to the blue cluster from Adam's code
+        if rand>= 0.801803:
+            gas = 30000
+            call_data = 136
+            return {"gas": gas, "call_data": int(call_data)}
+        ###
+
+        index = bisect(df["Additive Ratio"],rand)
+        print(rand, index)
+        gas = df["Gas Value"][index]
+        call_data = df["Call Data Length"][index]
+        if np.isnan(gas):
+            gas = float(stats.gamma.rvs(df["Alpha Gamma Parameter"][index], scale=1 /df["Beta Gamma Parameter"][index] , size=1))
+        if np.isnan(call_data):
+            call_data = float(stats.gamma.rvs(df["Alpha Gamma Parameter"][index], scale=1 /df["Beta Gamma Parameter"][index] , size=1))
+        return {"gas":gas,"call_data":int(call_data)}
