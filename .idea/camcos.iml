@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$/simulations/2022" />
+    <content url="file://$MODULE_DIR$/simulations" />
     <orderEntry type="jdk" jdkName="Python 3.10 (camcos_f2022)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
