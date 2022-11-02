@@ -25,11 +25,13 @@ class Demand():
   """
 
     def __init__(self, init_txns,t, txns_per_turn, resources: ResourcePackage):
+        self.init_txns = init_txns
         self.valuations = []
         self.limits = {}
         self.t = t
         self.txns_per_turn = txns_per_turn
         self.resources = resources
+
 
     def update(self,t):
         """
@@ -38,7 +40,7 @@ class Demand():
         """
         self.t = t
         if self.t == 0:
-            txn_count = init_txns
+            txn_count = self.init_txns
         else:
             txn_count = random.randint(50, self.txns_per_turn * 2 - 50)
 
@@ -55,56 +57,44 @@ class Demand():
             for r in self.resources.resource_names:
                 self.limits[r].append(generated_resource[r])
 
-
-class Basefee():
-
-    def __init__(self, d, target_limit, max_limit, value=0.0):
-        self.target_limit = target_limit
-        self.max_limit = max_limit
-        self.d = d
-        self.value = value
-
-    def scaled_copy(self, ratio):
-        """ gives a scaled copy of the same basefee objects; think of it as a decominator change """
-        # note that value doesn't change; if we split pricing for a half steel half bronze item
-        # into pricing for steel vs bronze, the volumes are halved but the values stay the same by
-        # default
-        return Basefee(self.d, self.target_limit * ratio, self.max_limit * ratio, self.value)
-
-    def update(self, gas):
-        """ return updated basefee given [b] original basefee and [g] gas used"""
-        self.value = self.value * (1 + self.d * ((gas - self.target_limit) / self.target_limit))
-
-
 class Simulator():
     """ Multidimensional EIP-1559 simulator. """
 
-    def __init__(self, basefee:Basefee, demand:Demand, knapsack_solver=None):
+    def __init__(self, demand:Demand, knapsack_solver=None):
         """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
     """
-        resource_package = demand.resources
-        resources = [str(x) for x in resource_package.resource_names]  # ensures everything is a string
-        self.resources = resources
+        self.resource_package = demand.resources
+        resources = [str(x) for x in self.resource_package.resource_names]  # ensures everything is a string
+        self.resources = resources # list of the names of resources for indexing purposes
         self.dimension = len(resources)  # number of resources
         self.demand = demand
-        self.capped = demand.resources.capped
+        self.split = demand.resources.split
+        self.basefee = self.resource_package.basefee
+
+
+        ### This section conflicts with oracle code
+        if self.split:
+            # One basefee for X+Y = Z method
+            self.basefee_init = 0
+            for r in self.resources:
+                self.basefee_init += self.resource_package.basefee[r].value
+        else:
+            # Dictionary of initial basefees for X+Y method
+            self.basefee_init = {}
+            for r in self.resources:
+                self.basefee_init[r] = self.resource_package.basefee[r].value
+
+        ### Previous method
+        # self.basefee_init = 0
+        # for r in self.resources:
+        #     self.basefee_init += self.resource_package.basefee[r].value
+        ###
 
         if knapsack_solver is None:
             self.knapsack_solver = "greedy"
         self.knapsack_solver = knapsack_solver
-
-
-        # everything else we use is basically a dictionary indexed by the resource names
-
-        self.basefee = {}
-        self.basefee_init = basefee.value
-        if self.capped:
-            self.ratio = {i: resource_package.ratio[i] for i in resources}
-            for r in self.resources:
-                self.basefee[r] = basefee.scaled_copy(self.ratio[r])
-
         self.mempool = pd.DataFrame([])
 
     # def total_bf(self):
@@ -131,8 +121,17 @@ class Simulator():
         _valuations = demand.valuations
         txn_count = len(_valuations)
 
-        for r in self.resources:
-            prices[r] = [self.basefee_init * v for v in _valuations]
+        ### This section conflicts with oracle code
+        if self.split:
+            for r in self.resources:
+                prices[r] = [self.basefee_init * v for v in _valuations]
+        else:
+            for r in self.resources:
+                prices[r] = [self.basefee_init[r] * v for v in _valuations]
+        ### Previous code
+        # for r in self.resources:
+        #     prices[r] = [self.basefee_init * v for v in _valuations]
+        ###
 
         limits = demand.limits
 
@@ -219,15 +218,19 @@ class Simulator():
 
         return block, block_size, block_min_tip
 
-    def simulate(self, demand:Demand, step_count):
-        """ Run the simulation for n steps """
+    def simulate(self, step_count):
+        """ Run the simulation for n steps
+        :param step_count: Number of blocks to evolve by
+        :return: basefees, block_data, mempool_data
+        """
+        demand = self.demand
 
         # initialize empty dataframes
         blocks = []
         mempools = []
         new_txn_counts = []
         used_txn_counts = []
-        self.oracle = oracle.Oracle(self.resources, self.ratio, self.basefee_init)
+        # self.oracle = oracle.Oracle(self.resources, self.ratio, self.basefee_init)
 
         basefees = {r: [self.basefee[r].value] for r in self.resources}
         limit_used = {r: [] for r in self.resources}
@@ -240,7 +243,7 @@ class Simulator():
             # fill blocks from mempools
             new_block, new_block_size, new_block_min_tips = self.fill_block(i, method=self.knapsack_solver)
             blocks += [new_block]
-            self.oracle.update(new_block_min_tips)
+            # self.oracle.update(new_block_min_tips)
 
             # update mempools
 
@@ -265,7 +268,7 @@ class Simulator():
             used_txn_counts.append(len(new_block))
 
             self.update_mempool(demand, i + 1)  # we shift by 1 because of how demand is indexed
-            new_txns_count = len(demand.valuations[i + 1])
+            new_txns_count = len(demand.valuations)
 
             new_txn_counts.append(new_txns_count)
 
@@ -278,23 +281,23 @@ class Simulator():
         return basefees, block_data, mempool_data
 
 
-def generate_simulation_data(simulator, demand, num_iterations):
+def generate_simulation_data(simulator,step_count, num_iterations):
     """
   This function generates multiple iterations of the simulation
   :param simulator: Accepts Simulator object
-  :param demand: Accepts Demand object
+  :param step_count: Number of blocks to evolve by
   :param num_iterations: int of number of times it will run
   :returns average of basefees and an array of dictionary of basefees, block_data and mempool_data from each iteration
   """
     # Array of arrays of the average of each resource
-    averages = [[0 for x in range(demand.step_count + 1)] for i in range(simulator.dimension)]
+    averages = [[0 for x in range(step_count + 1)] for i in range(simulator.dimension)]
     # Array of dictionary of basefees, block_data and mempool_data from each iteration
     outputs = []
 
     for i in range(num_iterations):
         # New simulator each time so it doesn't build on previous simulator object
         new_simulator = copy.deepcopy(simulator)
-        basefees_data, block_data, mempools_data = new_simulator.simulate(demand)
+        basefees_data, block_data, mempools_data = new_simulator.simulate(step_count)
         outputs.append(
             {"basefees_data": basefees_data, "block_data": block_data, "mempools_data": mempools_data})
 
@@ -377,29 +380,29 @@ def plot_simulation(data: dict, filename, title, x_label, y_label, show=False, f
     plt.cla()
 
 
-def run_simulations(simulator, demand, num_iterations, filetype=None, filepath=None):
+def run_simulations(simulator,step_count, num_iterations, filetype=None, filepath=None):
     """
     This function creates data, saves it and plots the average and all individual plots
     :param simulator: Accepts Simulator object
-    :param demand: Accepts Demand object
+    :param step_count: Number of blocks to evolve
     :param num_iterations: int of number of iterations averaged over
     :param filetype: Will be passed into generate_simulation_data
     :param filepath: Will be passed into generate_simulation_data
     :returns averaged_data: Average of basefees of each resource over num_iterations
     """
-    averaged_data, outputs = generate_simulation_data(simulator, demand, num_iterations)
+    averaged_data, outputs = generate_simulation_data(simulator, step_count, num_iterations)
     # Plot and save individual plots
     for count in range(len(outputs)):
         uniqueid = str(uuid.uuid1()).rsplit("-")[0]
         filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-{uuid}".format(simulator.dimension,
-                                                                                   x=simulator.resource_behavior,
+                                                                                   x=simulator.resource_package.resource_behavior,
                                                                                    y=simulator.knapsack_solver,
                                                                                    uuid=uniqueid)
         save_simulation_data(outputs[count]["basefees_data"], filename, filetype, filepath)
         plot_simulation(outputs[count]["basefees_data"],filename,"Basefee over Time","Block Number","Basefee (in Gwei)",show=False,filepath=filepath)
 
     # Plot and save averaged data
-    filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-averaged".format(2, x=simulator.resource_behavior,
+    filename = "meip_data-dimensions-{0:d}-{x}-block_method-{y}-averaged".format(2, x=simulator.resource_package.resource_behavior,
                                                                                  y=simulator.knapsack_solver)
     save_simulation_data(averaged_data, filename, filetype, filepath)
     plot_simulation(averaged_data,filename,"Basefee over Time. {0:d} iterations".format(num_iterations),"Block Number","Basefee (in Gwei)",show=True,filepath=filepath)
