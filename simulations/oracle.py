@@ -21,7 +21,6 @@ def load_data(filename, basefee_init, depth=100):
   ### Temporary solution, block data is not read properly in python file path
   # directory = os.getcwd()[:len(os.getcwd())-4]
   directory = settings.DATA_PATH
-  print(directory)
   data = pd.read_csv(str(directory / filename))
   df = data[['gasLimit', 'minGasPrice']].values # eventually we might find other things worthwhile
 
