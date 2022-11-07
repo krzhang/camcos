@@ -11,7 +11,12 @@ from bisect import bisect
 class Basefee():
 
   def __init__(self, d, target_limit, max_limit, value=0.0):
-    
+    """
+    :param target_limit: target gas limit (e.g. 1.5M gas)
+    :param max_limit: max limit (e.g. 3M gas)
+    :param d: the scaling factor in the basefee update (see update())
+    :param value: the value of the basefee at any particular time
+    """
     self.target_limit = target_limit
     self.max_limit = max_limit
     self.d = d
