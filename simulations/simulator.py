@@ -253,6 +253,7 @@ class Simulator():
         # initialize empty dataframes
         blocks = []
         mempools = []
+        mempool_sizes = []
         new_txn_counts = []
         used_txn_counts = []
         # self.oracle = oracle.Oracle(self.resources, self.ratio, self.basefee_init)
@@ -292,17 +293,20 @@ class Simulator():
 
             used_txn_counts.append(len(new_block))
 
+            mempool_sizes.append(len(self.mempool))
             self.update_mempool(demand, i + 1)  # we shift by 1 because of how demand is indexed
             new_txns_count = len(demand.valuations)
-
             new_txn_counts.append(new_txns_count)
+
+
 
         block_data = {"blocks": blocks,
                       "limit_used": limit_used,
                       "min_tips": min_tips}
         mempool_data = {"new_txn_counts": new_txn_counts,
                         #                    "mempools":mempools,
-                        "used_txn_counts": used_txn_counts}
+                        "used_txn_counts": used_txn_counts,
+                        "mempool_sizes":mempool_sizes}
         return basefees, block_data, mempool_data
 
 

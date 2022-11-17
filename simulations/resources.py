@@ -7,6 +7,7 @@ from constants import MAX_LIMIT, INFTY
 from settings import DATA_PATH
 import pandas as pd
 from bisect import bisect
+from ast import literal_eval
 
 class Basefee():
 
@@ -247,7 +248,7 @@ class JointResources(ResourcePackage):
   Adam's code. Reads in csv from /data/
   """
 
-  def __init__(self,resource_names: List[str]):
+  def __init__(self,resource_names: List[str],filename="specialGeneration.csv"):
     # self.resource_package = resource_names
     self.resource_package = ["gas","call_data"]
     ### Temporary solution to the basefee of these two objects
@@ -256,22 +257,28 @@ class JointResources(ResourcePackage):
     basefee_package = {"gas":bf_standard, "call_data":bf_standard}
     ###
     super().__init__(self.resource_package,"JOINT",basefee_package,False)
+    self.filename = filename
 
   def generate(self):
-    df = pd.read_csv(str(DATA_PATH)+"/specialGeneration.csv")
+    df = pd.read_csv(str(DATA_PATH)+"/"+self.filename)
     rand = random.random()
-    ### Temporary solution to the blue cluster from Adam's code
-    if rand>= 0.801803:
-      gas = 30000
-      call_data = 136
-      return {"gas": gas, "call_data": int(call_data)}
-    ###
 
     index = bisect(df["Additive Ratio"],rand)
+    generation_type = df["Type"][index]
     gas = df["Gas Value"][index]
-    call_data = df["Call Data Length"][index]
-    if np.isnan(gas):
+    call_data = df["Calldata Length"][index]
+
+    if generation_type == "CDDistribution":
       gas = float(stats.gamma.rvs(df["Alpha Gamma Parameter"][index], scale=1 /df["Beta Gamma Parameter"][index] , size=1))
-    if np.isnan(call_data):
+    elif generation_type == "GasDistribution":
       call_data = float(stats.gamma.rvs(df["Alpha Gamma Parameter"][index], scale=1 /df["Beta Gamma Parameter"][index] , size=1))
+    elif generation_type == "Point":
+      pass
+    elif generation_type == "Remaining":
+      call_data, gas = np.random.multivariate_normal(literal_eval(df["Mu Lognormal Parameter"][12]),
+                                                     literal_eval(df["Cov Lognormal Parameter"][12]), 1).T
+      call_data = call_data[0]
+      gas = gas[0]
+    else:
+      raise ValueError("Distribution type not found")
     return {"gas":gas,"call_data":int(call_data)}
