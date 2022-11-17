@@ -60,7 +60,7 @@ class Demand():
 class Simulator():
     """ Multidimensional EIP-1559 simulator. """
 
-    def __init__(self, demand:Demand, knapsack_solver=None):
+    def __init__(self, demand:Demand, knapsack_solver="greedy",tx_decay_time = -1):
         """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
@@ -91,10 +91,8 @@ class Simulator():
         # for r in self.resources:
         #     self.basefee_init += self.resource_package.basefee[r].value
         ###
-
-        if knapsack_solver is None:
-            self.knapsack_solver = "greedy"
         self.knapsack_solver = knapsack_solver
+        self.tx_decay_time = tx_decay_time
         self.mempool = pd.DataFrame([])
 
     # def total_bf(self):
@@ -298,6 +296,9 @@ class Simulator():
             new_txns_count = len(demand.valuations)
             new_txn_counts.append(new_txns_count)
 
+            # Drop expired transactions
+            if self.tx_decay_time>0:
+                self.mempool = self.mempool[self.mempool["time"]>i-self.tx_decay_time]
 
 
         block_data = {"blocks": blocks,
