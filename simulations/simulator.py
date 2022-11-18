@@ -60,7 +60,7 @@ class Demand():
 class Simulator():
     """ Multidimensional EIP-1559 simulator. """
 
-    def __init__(self, demand:Demand, knapsack_solver=None):
+    def __init__(self, demand:Demand, knapsack_solver="greedy",tx_decay_time = -1):
         """
     [ratio]: example (0.7, 0.3) would split the [basefee] into 2 basefees with those
     relative values
@@ -91,10 +91,8 @@ class Simulator():
         # for r in self.resources:
         #     self.basefee_init += self.resource_package.basefee[r].value
         ###
-
-        if knapsack_solver is None:
-            self.knapsack_solver = "greedy"
         self.knapsack_solver = knapsack_solver
+        self.tx_decay_time = tx_decay_time
         self.mempool = pd.DataFrame([])
 
     # def total_bf(self):
@@ -190,20 +188,22 @@ class Simulator():
         #    Since we might have multiple resources and we don't want to overcomplicate things,
         #    our hack is just to just have a buffer of lookaheads ([patience], which decreases whenever
         #    we get stuck) and stop when we get stuck.
-        patience = 10
         included_indices = []
-        for i in range(len(self.mempool)):
-            tx = self.mempool.iloc[i, :]
-            txn = tx.to_dict()
-            # this should give something like {"time":blah, "total_value":blah...
-            # TODO: should allow negative money if it's worth a lot of money in total
-            if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
-                    txn["profit"] < 0):
-                if patience == 0:
-                    break
-                else:
-                    patience -= 1
-            else:
+        if method == "dp":
+            # This is the dynamic programming technique. Currently only works for 2 resources
+            if self.dimension != 2:
+                raise ValueError("Current method only supports 2 resources!")
+            # gas array
+
+            selected_indices = knapsack(self.resource_package.basefee["gas"].max_limit,
+                                        self.mempool["gas limit"],
+                                        self.mempool["call_data limit"],
+                                        len(self.mempool["gas limit"]),
+                                        self.resource_package.basefee["call_data"].max_limit,
+                                        )
+            for i in selected_indices:
+                tx = self.mempool.iloc[i, :]
+                txn = tx.to_dict()
                 block.append(txn)
                 included_indices.append(i)
                 # faster version of self.mempool = self.mempool.iloc[i+1:, :]
@@ -211,6 +211,29 @@ class Simulator():
                     block_size[r] += txn[r + " limit"]
                     if txn[r + " price"] - self.basefee[r].value < block_min_tip[r]:
                         block_min_tip[r] = txn[r + " price"] - self.basefee[r].value
+
+
+        else:
+            patience = 10
+            for i in range(len(self.mempool)):
+                tx = self.mempool.iloc[i, :]
+                txn = tx.to_dict()
+                # this should give something like {"time":blah, "total_value":blah...
+                # TODO: should allow negative money if it's worth a lot of money in total
+                if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
+                        txn["profit"] < 0):
+                    if patience == 0:
+                        break
+                    else:
+                        patience -= 1
+                else:
+                    block.append(txn)
+                    included_indices.append(i)
+                    # faster version of self.mempool = self.mempool.iloc[i+1:, :]
+                    for r in self.resources:
+                        block_size[r] += txn[r + " limit"]
+                        if txn[r + " price"] - self.basefee[r].value < block_min_tip[r]:
+                            block_min_tip[r] = txn[r + " price"] - self.basefee[r].value
 
         self.mempool.drop(included_indices, inplace=True)
         # block_wait_times = [time - txn["time"] for txn in block]
@@ -228,6 +251,7 @@ class Simulator():
         # initialize empty dataframes
         blocks = []
         mempools = []
+        mempool_sizes = []
         new_txn_counts = []
         used_txn_counts = []
         # self.oracle = oracle.Oracle(self.resources, self.ratio, self.basefee_init)
@@ -267,17 +291,23 @@ class Simulator():
 
             used_txn_counts.append(len(new_block))
 
+            mempool_sizes.append(len(self.mempool))
             self.update_mempool(demand, i + 1)  # we shift by 1 because of how demand is indexed
             new_txns_count = len(demand.valuations)
-
             new_txn_counts.append(new_txns_count)
+
+            # Drop expired transactions
+            if self.tx_decay_time>0:
+                self.mempool = self.mempool[self.mempool["time"]>i-self.tx_decay_time]
+
 
         block_data = {"blocks": blocks,
                       "limit_used": limit_used,
                       "min_tips": min_tips}
         mempool_data = {"new_txn_counts": new_txn_counts,
                         #                    "mempools":mempools,
-                        "used_txn_counts": used_txn_counts}
+                        "used_txn_counts": used_txn_counts,
+                        "mempool_sizes":mempool_sizes}
         return basefees, block_data, mempool_data
 
 
@@ -407,3 +437,70 @@ def run_simulations(simulator,step_count, num_iterations, filetype=None, filepat
     save_simulation_data(averaged_data, filename, filetype, filepath)
     plot_simulation(averaged_data,filename,"Basefee over Time. {0:d} iterations".format(num_iterations),"Block Number","Basefee (in Gwei)",show=True,filepath=filepath)
     return averaged_data
+
+# Dynamic programming method for solving knapsack problem
+def knapsack(W, resource_1, resource_2, n, capped_value=None):
+    wt = resource_1
+    val = resource_2
+
+    # Initialize dp array
+    K = [[0 for w in range(W + 1)]
+         for i in range(n + 1)]
+
+    # Build table K[][] in bottom up manner
+    for i in range(n + 1):
+        for w in range(W + 1):
+            if i == 0 or w == 0:
+                K[i][w] = 0
+            elif wt[i - 1] <= w:
+                K[i][w] = max(val[i - 1]
+                              + K[i - 1][w - wt[i - 1]],
+                              K[i - 1][w])
+            else:
+                K[i][w] = K[i - 1][w]
+
+    # stores the result of Knapsack
+    if capped_value is None:
+        total_val = K[n][W]
+    else:
+        unique_list = np.unique(K)
+        # Do binary search
+        start = 0
+        end = len(unique_list) - 1
+        if (end == 0):
+            return -1
+        if (capped_value > unique_list[end]):
+            return end
+
+        total_val = -1
+        while (start <= end):
+            mid = (start + end) // 2
+            if (unique_list[mid] >= capped_value):
+                end = mid - 1
+            else:
+                total_val = mid
+                start = mid + 1
+
+    if total_val<0:
+        raise ValueError("Optimized solution not found")
+
+    w = W
+    included_indices = []
+    for i in range(n, 0, -1):
+        if total_val <= 0:
+            break
+        # either the result comes from the top (K[i-1][w]) or from (val[i-1] + K[i-1] [w-wt[i-1]]) as in Knapsack
+        # table. If it comes from the latter one it means the item is included.
+        if total_val == K[i - 1][w]:
+            continue
+        else:
+
+            # This item is included.
+            included_indices.append(i-1)
+
+            # Since this weight is included
+            # its value is deducted
+            total_val -= val[i - 1]
+            w -= wt[i - 1]
+
+    return included_indices
