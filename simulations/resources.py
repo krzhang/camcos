@@ -92,7 +92,7 @@ class IndependentResources(ResourcePackage):
     self.basefee = {}
     for r in resource_names:
       self.basefee[r] = basefee.scaled_copy(self.ratio[r])
-      self.basefee[r].value_setter(self.basefee_init*self.ratio[r])
+      # self.basefee[r].value_setter(self.basefee_init*self.ratio[r])
 
     super().__init__(resource_names, "INDEPENDENT",self.basefee, True,self.ratio)
     # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
@@ -133,7 +133,7 @@ class CorrelatedResources(ResourcePackage):
     self.basefee = {}
     for r in resource_names:
       self.basefee[r] = basefee.scaled_copy(self.ratio[r])
-      self.basefee[r].value_setter(self.basefee_init * self.ratio[r])
+      # self.basefee[r].value_setter(self.basefee_init * self.ratio[r])
 
     super().__init__(resource_names, "CORRELATED", self.basefee, True, self.ratio)
     # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
@@ -260,6 +260,7 @@ class JointResources(ResourcePackage):
   def __init__(self,resource_names: List[str],filename="specialGeneration.csv"):
     # self.resource_package = resource_names
     self.resource_package = ["gas","call_data"]
+
     ### Temporary solution to the basefee of these two objects
     bf_standard_value = 38.100002694
     bf_standard = Basefee(1.0 / 8, 15000000, 30000000, bf_standard_value)

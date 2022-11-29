@@ -77,9 +77,9 @@ class Simulator():
         ### This section conflicts with oracle code
         if self.split:
             # One basefee for X+Y = Z method
-            self.basefee_init = 0
-            for r in self.resources:
-                self.basefee_init += self.resource_package.basefee[r].value
+            self.basefee_init = self.resource_package.basefee_init
+            # for r in self.resources:
+            #     self.basefee_init += self.resource_package.basefee[r].value
         else:
             # Dictionary of initial basefees for X+Y method
             self.basefee_init = {}
