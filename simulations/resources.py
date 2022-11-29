@@ -34,6 +34,10 @@ class Basefee():
     """ return updated basefee given [b] original basefee and [g] gas used"""
     self.value = self.value * (1 + self.d * ((gas - self.target_limit) / self.target_limit))
 
+  def value_setter(self,value):
+    """Setter for basefee"""
+    self.value = value
+
 
 class ResourcePackage(ABC):
   """
@@ -85,6 +89,7 @@ class IndependentResources(ResourcePackage):
     self.basefee = {}
     for r in resource_names:
       self.basefee[r] = basefee.scaled_copy(self.ratio[r])
+      self.basefee[r].value_setter(self.basefee_init*self.ratio[r])
 
     super().__init__(resource_names, "INDEPENDENT",self.basefee, True,self.ratio)
     # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
@@ -125,6 +130,7 @@ class CorrelatedResources(ResourcePackage):
     self.basefee = {}
     for r in resource_names:
       self.basefee[r] = basefee.scaled_copy(self.ratio[r])
+      self.basefee[r].value_setter(self.basefee_init * self.ratio[r])
 
     super().__init__(resource_names, "CORRELATED", self.basefee, True, self.ratio)
     # pareto distribution with alpha 1.42150, beta 21000 (from empirical results)
