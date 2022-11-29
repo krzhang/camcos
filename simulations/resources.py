@@ -32,7 +32,10 @@ class Basefee():
 
   def update(self, gas):
     """ return updated basefee given [b] original basefee and [g] gas used"""
-    self.value = self.value * (1 + self.d * ((gas - self.target_limit) / self.target_limit))
+    if self.target_limit == 0:
+      pass
+    else:
+      self.value = self.value * (1 + self.d * ((gas - self.target_limit) / self.target_limit))
 
   def value_setter(self,value):
     """Setter for basefee"""
