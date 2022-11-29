@@ -13,6 +13,7 @@ import uuid
 from scipy import stats
 from resources import ResourcePackage
 from constants import MAX_LIMIT, INFTY
+from heapq import heapify, heappush, heappop
 
 
 class Demand():
@@ -177,7 +178,7 @@ class Simulator():
         # 1. we sort transactions in each mempool by total value in descending order
 
         self.mempool['profit'] = self.mempool.apply(self._compute_profit, axis=1)
-        if method == "greedy":
+        if method == "greedy" or method == "backlog":
             self.mempool = self.mempool.sort_values(by=['profit'],
                                                     ascending=False).reset_index(drop=True)
         # randomly choose blocks by not sorting them
@@ -214,14 +215,24 @@ class Simulator():
 
 
         else:
+            heap = []
+            heapify(heap)
             patience = 10
             for i in range(len(self.mempool)):
                 tx = self.mempool.iloc[i, :]
                 txn = tx.to_dict()
+
+                if method == "backlog" and len(heap)>0:
+                    txn = heappop(heap)[1]
+
                 # this should give something like {"time":blah, "total_value":blah...
                 # TODO: should allow negative money if it's worth a lot of money in total
                 if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
                         txn["profit"] < 0):
+
+                    heappush(heap,(txn["profit"],txn))
+                    included_indices.append(i)
+
                     if patience == 0:
                         break
                     else:
