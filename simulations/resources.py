@@ -264,7 +264,11 @@ class JointResources(ResourcePackage):
     ### Temporary solution to the basefee of these two objects
     bf_standard_value = 38.100002694
     bf_standard = Basefee(1.0 / 8, 15000000, 30000000, bf_standard_value)
-    basefee_package = {"gas":bf_standard, "call_data":bf_standard}
+
+    call_data_standard_value = 500
+    call_data_standard = Basefee(1.0 / 8, 75000, 150000, call_data_standard_value)
+
+    basefee_package = {"gas":bf_standard, "call_data":call_data_standard}
     ###
     super().__init__(self.resource_package,"JOINT",basefee_package,False)
     self.filename = filename

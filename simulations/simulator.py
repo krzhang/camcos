@@ -230,7 +230,8 @@ class Simulator():
                 if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
                         txn["profit"] < 0):
 
-                    heappush(heap,(txn["profit"],txn))
+                    if method == "backlog" and len(heap) > 0:
+                        heappush(heap,(txn["profit"],txn))
                     included_indices.append(i)
 
                     if patience == 0:
