@@ -11,7 +11,7 @@ source activate p310
 export PYTHONPATH=/home/yteoh/camcos/
 
 call_data_standard_value=25
-call_data_learning_rate=1.0/8
+call_data_learning_rate=1/8
 call_data_target_limit=25000
 step_count=10
 directory="small_test"

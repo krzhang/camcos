@@ -9,7 +9,7 @@ if __name__ == "__main__":
     if "cluster" in socket.gethostname():  # cluster
         # Initialize variables
         call_data_standard_value_input = int(sys.argv[1])
-        call_data_learning_rate = float(sys.argv[2])
+        call_data_learning_rate = str(sys.argv[2])
         a, b = call_data_learning_rate.split("/")
         call_data_learning_rate = int(a) / int(b)
 
