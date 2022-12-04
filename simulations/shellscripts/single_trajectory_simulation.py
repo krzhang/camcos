@@ -70,6 +70,9 @@ if __name__ == "__main__":
         data_dir = "/home/yteoh/camcos_results/" + direc + "/data/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
 
+        # Disable figure showing
+        matplotlib.use('qtagg')
+
     else:  # local machine
         # Initialize variables
         call_data_standard_value_input = 25
