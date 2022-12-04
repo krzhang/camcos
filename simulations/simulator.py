@@ -8,7 +8,6 @@ import oracle
 import resources
 import os
 import h5py
-import matplotlib.pyplot as plt
 import uuid
 from scipy import stats
 from resources import ResourcePackage
