@@ -71,6 +71,7 @@ if __name__ == "__main__":
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
 
         # Disable figure showing
+        import matplotlib
         matplotlib.use('qtagg')
 
     else:  # local machine
