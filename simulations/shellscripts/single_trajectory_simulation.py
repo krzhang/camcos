@@ -6,7 +6,6 @@ from simulator import Simulator,Demand,run_simulations
 # from oracle import Oracle
 from resources import BasicResource, ResourcePackage, IndependentResources, CorrelatedResources, IndividualResources
 from resources import BasicCallData, BasicGas, JointResources, Basefee
-import matplotlib.pyplot as plt
 import socket
 
 def save_simulation(data, attributes, filename, filepath):
@@ -33,6 +32,12 @@ def save_simulation(data, attributes, filename, filepath):
     print("Saving hdf5 as " + filename + ".hdf5")
 
 def save_figure(data,filename,filepath,iterations=None):
+    # Disable figure showing
+    if "cluster" in socket.gethostname():
+        import matplotlib
+        matplotlib.use('agg')
+    import matplotlib.pyplot as plt
+
     plt.rcParams["figure.figsize"] = (15,10)
     if iterations is None:
         plt.title("Basefee over Time")
@@ -69,10 +74,6 @@ if __name__ == "__main__":
 
         data_dir = "/home/yteoh/camcos_results/" + direc + "/data/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
-
-        # Disable figure showing
-        import matplotlib
-        matplotlib.use('agg')
 
     else:  # local machine
         # Initialize variables

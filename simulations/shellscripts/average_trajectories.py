@@ -22,10 +22,6 @@ if __name__ == "__main__":
         average_dir = "/home/yteoh/camcos_results/" + direc + "/averages/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/averaged_figures/"
 
-        # Disable figure showing
-        import matplotlib
-        matplotlib.use('agg')
-
     else:  # local machine
         # Initialize variables
         call_data_standard_value_input = 25
