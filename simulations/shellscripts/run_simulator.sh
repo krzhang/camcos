@@ -16,5 +16,5 @@ call_data_target_limit=25000
 step_count=10
 directory="small_test"
 
-#srun --ntasks 8 python /home/yteoh/camcos/simulations/shellscripts/single_trajectory_simulation.py $call_data_standard_value $call_data_learning_rate $call_data_target_limit $step_count $directory
+srun --ntasks 8 python /home/yteoh/camcos/simulations/shellscripts/single_trajectory_simulation.py $call_data_standard_value $call_data_learning_rate $call_data_target_limit $step_count $directory
 srun --ntasks 1 python /home/yteoh/camcos/simulations/shellscripts/average_trajectories.py $call_data_standard_value $call_data_learning_rate $call_data_target_limit $step_count $directory
