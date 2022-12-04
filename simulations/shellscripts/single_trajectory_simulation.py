@@ -33,21 +33,18 @@ def save_simulation(data, attributes, filename, filepath):
     print("Saving hdf5 as " + filename + ".hdf5")
 
 def save_figure(data,filename,filepath,iterations=None):
-    fig, ax = plt.subplots()
-    fig.set_figheight(10)
-    fig.set_figwidth(15)
+    plt.rcParams["figure.figsize"] = (15,10)
     if iterations is None:
-        ax.set_title("Basefee over Time")
+        plt.title("Basefee over Time")
     else:
-        ax.set_title("Basefee over Time. "+"Number of iterations: "+str(iterations))
-    ax.set_xlabel("Block Number")
-    ax.set_ylabel("Basefee (in Gwei)")
-    ax.plot(data["basefees_data"]["gas"], label="gas")
+        plt.title("Basefee over Time. "+"Number of iterations: "+str(iterations))
+    plt.xlabel("Block Number")
+    plt.ylabel("Basefee (in Gwei)")
+    plt.plot(data["basefees_data"]["gas"], label="gas")
     basefees_data_space = [x + 1 for x in data["basefees_data"]["call_data"]]
-    ax.plot(basefees_data_space, label="call_data")
-    ax.legend(loc="upper left")
-    fig.show()
-    fig.savefig(filepath + filename + ".png")
+    plt.plot(basefees_data_space, label="call_data")
+    plt.legend(loc="upper left")
+    plt.savefig(filepath + filename + ".png")
     print("Saving figure as " + filename + ".png")
 
 if __name__ == "__main__":
