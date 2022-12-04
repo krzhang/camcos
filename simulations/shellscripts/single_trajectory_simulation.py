@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
         # Disable figure showing
         import matplotlib
-        matplotlib.use('qtagg')
+        matplotlib.use('agg')
 
     else:  # local machine
         # Initialize variables
