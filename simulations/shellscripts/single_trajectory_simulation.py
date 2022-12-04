@@ -54,7 +54,10 @@ if __name__ == "__main__":
     if "cluster" in socket.gethostname():  # cluster
         # Initialize variables
         call_data_standard_value_input = int(sys.argv[1])
-        call_data_learning_rate = float(sys.argv[2])
+        call_data_learning_rate = str(sys.argv[2])
+        a, b = call_data_learning_rate.split("/")
+        call_data_learning_rate = int(a) / int(b)
+
         call_data_target_limit = int(sys.argv[3])
         call_data_max_limit = call_data_target_limit*2
         step_count = int(sys.argv[4])
