@@ -22,8 +22,8 @@ class UniformDistribution(Distribution):
     return np.random.uniform(self.low, self.high, k)
 
   def nash(self, k, value):
-    integral = sp.quad(lambda x: pow((x-self.low)/(value - self.low), k-1), 0, value)
-    return value - integral
+    integral = sp.integrate.quad(lambda x: pow((x-self.low)/(value - self.low), k-1), 0, value)
+    return value - integral[0]
   
 class GammaDistribution(Distribution):
   def __init__(self, shape, scale):
@@ -35,8 +35,8 @@ class GammaDistribution(Distribution):
 
   def nash(self, k, value):
     cdf = lambda x: sp.stats.gamma.cdf(x, self.shape, scale=self.scale)
-    integral = sp.quad(lambda x: pow(cdf(x)/cdf(value), k-1), 0, value)
-    return value - integral
+    integral = sp.integrate.quad(lambda x: pow(cdf(x)/cdf(value), k-1), 0, value)
+    return value - integral[0]
 
 class Simulator(object):
   """
