@@ -276,6 +276,7 @@ class Simulator():
         # initialize mempools
         self.update_mempool(demand, 0)  # the 0-th slot for demand is initial transactions
 
+
         # iterate over n blocks
         for i in range(step_count):
             # fill blocks from mempools
@@ -290,7 +291,10 @@ class Simulator():
                 basefees[r] += [self.basefee[r].value]
                 limit_used[r].append(new_block_size[r])
                 min_tips[r].append(new_block_min_tips[r])
-                block_utilization_rate[r].append(new_block_size[r]/self.basefee[r].max_limit)
+                if self.basefee[r].max_limit == 0:
+                    block_utilization_rate[r].append(0)
+                else:
+                    block_utilization_rate[r].append(new_block_size[r]/self.basefee[r].max_limit)
 
             # # Commented: save mempools (expensive!)
             # # if we do use them, this creates a copy; dataframes and lists are mutable
@@ -315,6 +319,7 @@ class Simulator():
             if self.tx_decay_time>0:
                 self.mempool = self.mempool[self.mempool["time"]>i-self.tx_decay_time]
 
+        plt.show()
 
         block_data = {"blocks": blocks,
                       "limit_used": limit_used,
