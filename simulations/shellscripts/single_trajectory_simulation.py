@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 os.mkdir(parent_dir)
             except FileExistsError:
                 print("Directory already exists")
-
+        special_generation_file = str(sys.argv[6])
         data_dir = "/home/yteoh/camcos_results/" + direc + "/data/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
 
@@ -82,6 +82,7 @@ if __name__ == "__main__":
         call_data_target_limit = 25000
         call_data_max_limit = call_data_target_limit * 2
         step_count = 10
+        special_generation_file = "specialGenerationNFT.csv"
         # Initialize directory
         data_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/data/"
         image_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/figures/"
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     call_data_standard = Basefee(call_data_learning_rate, call_data_target_limit, call_data_max_limit, call_data_standard_value)
 
     # Simulator initialization
-    j_r = JointResources(["gas", "call_data"], bf_standard, call_data_standard)
+    j_r = JointResources(["gas", "call_data"], bf_standard, call_data_standard,filename=special_generation_file)
     demand = Demand(2000, 0, 400, j_r)
     sim = Simulator(demand)
 

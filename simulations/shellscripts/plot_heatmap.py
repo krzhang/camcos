@@ -16,6 +16,7 @@ if __name__ == "__main__":
     image_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/averaged_figures/"
 
     learning_rates = [1/13, 1/10,1/8, 3/8, 5/8]
+    learning_rates_plot = ["1/13","1/10","1/8", "3/8", "5/8"]
     target_limits = [21500,22500,23500,24500]
 
     variance_gas = np.zeros((len(learning_rates),len(target_limits)))
@@ -63,5 +64,5 @@ if __name__ == "__main__":
     # import matplotlib.pyplot as plt
     # sns.heatmap(variance_gas)
     sns.color_palette("hls", 8)
-    sns.heatmap(variance_call_data,xticklabels=target_limits, yticklabels=learning_rates,annot=True,cmap="crest")
+    sns.heatmap(variance_call_data,xticklabels=target_limits, yticklabels=learning_rates_plot,annot=True,cmap="crest")
     plt.show()
