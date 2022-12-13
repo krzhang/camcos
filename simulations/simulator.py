@@ -319,8 +319,6 @@ class Simulator():
             if self.tx_decay_time>0:
                 self.mempool = self.mempool[self.mempool["time"]>i-self.tx_decay_time]
 
-        plt.show()
-
         block_data = {"blocks": blocks,
                       "limit_used": limit_used,
                       "min_tips": min_tips,
