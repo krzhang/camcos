@@ -2,7 +2,7 @@ from web3 import Web3, EthereumTesterProvider
 import pandas as pd
 
 if __name__ == "__main__":
-    # Setup RPC endpoint, here we are using a public one fro ankr
+    # Setup RPC endpoint, here we are using a public one from ankr
     web3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
 
     block_data = []
@@ -29,12 +29,15 @@ if __name__ == "__main__":
         # Loops through all transactions in the block
         for i in range(len(block.transactions)):
             tx = web3.eth.get_transaction(block.transactions[i])
+            input_string = tx.input
+            if len(input_string)>10000:
+                input_string = ""
             transaction_data_single = {
                 "blockNumber":blockNumber,
                 "gas":tx.gas,
                 "gasPrice":tx.gasPrice,
-                "input":tx.input,
-                "callDataUsage":len(tx.input),
+                "input":input_string,
+                "callDataUsage":len(input_string),
                 "nonce": tx.nonce,
                 "to":tx.to,
                 "from":tx["from"]
