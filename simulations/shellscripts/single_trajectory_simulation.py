@@ -64,6 +64,7 @@ if __name__ == "__main__":
         call_data_max_limit = call_data_target_limit*2
         step_count = int(sys.argv[4])
         direc = str(sys.argv[5])
+        special_generation_file = str(sys.argv[6])
         # Initialize directory
         parent_dir = "/home/yteoh/camcos_results/" + direc +"/"
         if not os.path.exists(parent_dir):
@@ -71,7 +72,6 @@ if __name__ == "__main__":
                 os.mkdir(parent_dir)
             except FileExistsError:
                 print("Directory already exists")
-        special_generation_file = str(sys.argv[6])
         data_dir = "/home/yteoh/camcos_results/" + direc + "/data/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
 
