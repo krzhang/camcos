@@ -8,7 +8,6 @@ import oracle
 import resources
 import os
 import h5py
-import matplotlib.pyplot as plt
 import uuid
 from scipy import stats
 from resources import ResourcePackage
@@ -163,6 +162,8 @@ class Simulator():
         return tx["total_value"] - burn
 
     def fill_block(self, time, method=None):
+        # possible choices: greedy, dp, random, backlog
+
         if method is None:
             method = "greedy"
 
@@ -230,7 +231,8 @@ class Simulator():
                 if (any(txn[r + " limit"] + block_size[r] > block_max[r] for r in self.resources) or
                         txn["profit"] < 0):
 
-                    heappush(heap,(txn["profit"],txn))
+                    if method == "backlog" and len(heap) > 0:
+                        heappush(heap,(txn["profit"],txn))
                     included_indices.append(i)
 
                     if patience == 0:
@@ -270,8 +272,10 @@ class Simulator():
         basefees = {r: [self.basefee[r].value] for r in self.resources}
         limit_used = {r: [] for r in self.resources}
         min_tips = {r: [] for r in self.resources}
+        block_utilization_rate = {r: [] for r in self.resources}
         # initialize mempools
         self.update_mempool(demand, 0)  # the 0-th slot for demand is initial transactions
+
 
         # iterate over n blocks
         for i in range(step_count):
@@ -287,6 +291,10 @@ class Simulator():
                 basefees[r] += [self.basefee[r].value]
                 limit_used[r].append(new_block_size[r])
                 min_tips[r].append(new_block_min_tips[r])
+                if self.basefee[r].max_limit == 0:
+                    block_utilization_rate[r].append(0)
+                else:
+                    block_utilization_rate[r].append(new_block_size[r]/self.basefee[r].max_limit)
 
             # # Commented: save mempools (expensive!)
             # # if we do use them, this creates a copy; dataframes and lists are mutable
@@ -311,15 +319,24 @@ class Simulator():
             if self.tx_decay_time>0:
                 self.mempool = self.mempool[self.mempool["time"]>i-self.tx_decay_time]
 
-
         block_data = {"blocks": blocks,
                       "limit_used": limit_used,
-                      "min_tips": min_tips}
+                      "min_tips": min_tips,
+                      "block_utilization_rate": block_utilization_rate
+                      }
         mempool_data = {"new_txn_counts": new_txn_counts,
                         #                    "mempools":mempools,
                         "used_txn_counts": used_txn_counts,
                         "mempool_sizes":mempool_sizes}
-        return basefees, block_data, mempool_data
+
+        basefee_variance = {r: np.var(basefees[r]) for r in self.resources}
+        basefee_mean = {r: np.mean(basefees[r]) for r in self.resources}
+
+        basefees_stats = { "basefees_variance": basefee_variance,
+                         "basefees_mean": basefee_mean,
+        }
+
+        return basefees, block_data, mempool_data, basefees_stats
 
 
 def generate_simulation_data(simulator,step_count, num_iterations):
