@@ -17,7 +17,7 @@ step_count=400
 directory="2022_12_13"
 filename="specialGenerationNFT.csv"
 
-call_data_learning_rates=("1/13" "1/12" "1/11" "1/10" "1/9")
+call_data_learning_rates=("1/8" "3/8" "5/8")
 call_data_target_limits=("21500" "22000" "22500" "23000" "23500" "24000" "24500" "25000")
 
 for i in "${call_data_learning_rates[@]}"
