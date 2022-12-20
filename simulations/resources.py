@@ -257,14 +257,11 @@ class JointResources(ResourcePackage):
   Adam's code. Reads in csv from /data/
   """
 
-  def __init__(self,resource_names: List[str],filename="specialGeneration.csv"):
+  def __init__(self,resource_names: List[str],bf_standard:Basefee, call_data_standard:Basefee,filename="specialGeneration.csv"):
     # self.resource_package = resource_names
     self.resource_package = ["gas","call_data"]
 
-    ### Temporary solution to the basefee of these two objects
-    bf_standard_value = 38.100002694
-    bf_standard = Basefee(1.0 / 8, 15000000, 30000000, bf_standard_value)
-    basefee_package = {"gas":bf_standard, "call_data":bf_standard}
+    basefee_package = {"gas":bf_standard, "call_data":call_data_standard}
     ###
     super().__init__(self.resource_package,"JOINT",basefee_package,False)
     self.filename = filename
