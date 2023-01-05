@@ -1,5 +1,9 @@
 import os
-import sys; sys.path.insert(0, '..')
+import sys;
+
+import matplotlib.pyplot as plt
+import numpy as np
+sys.path.insert(0, '..')
 import h5py
 import uuid
 from simulator import Simulator,Demand,run_simulations
@@ -21,5 +25,15 @@ if __name__ == "__main__":
     plt.title("Basefee over Time")
     plt.xlabel("Block Number")
     plt.ylabel("Basefee (in Gwei)")
-    plt.plot(basefees_data["gas"])
+    plt.plot(basefees_data["gas"],label="EIP-1559")
+
+    d = 1/9
+    t_lim = 23500
+    data_dir = "/Users/teohyikhaw/Documents/camcos_results/2022_12_11/averages/"
+    filename = "d-{0:.4f}-call_data_target-{1:d}.hdf5".format(d, t_lim)
+
+    f=h5py.File(data_dir+filename,"r")
+    total_basefees = np.add(list(f["gas"]),list(f["call_data"]))
+    plt.plot(total_basefees,label="MEIP-1559")
+    plt.legend()
     plt.show()
