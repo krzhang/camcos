@@ -282,8 +282,8 @@ class JointResources(ResourcePackage):
     elif generation_type == "Point":
       pass
     elif generation_type == "Remaining":
-      call_data, gas = np.random.multivariate_normal(literal_eval(df["Mu Lognormal Parameter"][12]),
-                                                     literal_eval(df["Cov Lognormal Parameter"][12]), 1).T
+      call_data, gas = np.random.multivariate_normal(literal_eval(df["Mu Lognormal Parameter"][index]),
+                                                     literal_eval(df["Cov Lognormal Parameter"][index]), 1).T
       call_data = call_data[0]
       gas = gas[0]
     else:

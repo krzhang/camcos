@@ -1,14 +1,29 @@
 from web3 import Web3, EthereumTesterProvider
 import pandas as pd
+import sys; sys.path.insert(0, '..')  # this adds the parent directory into the path, since we want simulations from the parent directory
+from settings import DATA_PATH
+
+"""
+Given a starting and ending block number, this program scrapes block and transaction data and outputs them into a csv
+Ensure that you have the web3 library installed. If not, use "pip install web3"
+"""
 
 if __name__ == "__main__":
     # Setup RPC endpoint, here we are using a public one from ankr
     web3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
 
+    # This following block of code checks the date of the block
+    # blockNumber = 15627832
+    # block = web3.eth.get_block(blockNumber)
+    # dt_object = datetime.fromtimestamp(block["timestamp"])
+    # print(dt_object)
+
     block_data = []
     transaction_data = []
+    # Set from which block to which block that you'd like to scrape from
     startBlockNum = 15627832
     endBlockNum = 15627932
+    # stepCount gets every nth block from your start to end block number
     stepCount = 1
 
     for blockNumber in range(startBlockNum, endBlockNum, stepCount):
@@ -30,6 +45,8 @@ if __name__ == "__main__":
         for i in range(len(block.transactions)):
             tx = web3.eth.get_transaction(block.transactions[i])
             input_string = tx.input
+            # When the call data is more than 10000, the input string is manually set to null since it would overflow. This is a temporary solution
+            # TODO: Fix overflow issue
             if len(input_string)>10000:
                 input_string = ""
             transaction_data_single = {
@@ -44,7 +61,8 @@ if __name__ == "__main__":
             }
             transaction_data.append(transaction_data_single)
 
+    # Output files should be under data/. You may rename the files here
     df = pd.DataFrame(block_data)
-    df.to_csv("blockDataContinuous.csv")
+    df.to_csv(DATA_PATH+"/"+"blockData.csv")
     df2 = pd.DataFrame(transaction_data)
-    df2.to_csv("transactionDataContinuous.csv")
+    df2.to_csv(DATA_PATH+"/"+"transactionData.csv")

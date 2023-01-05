@@ -9,12 +9,21 @@ from resources import BasicCallData, BasicGas, JointResources, Basefee
 import socket
 
 def save_simulation(data, attributes, filename, filepath):
+    """
+    This is a function that saves simulation data as a hdf5 file
+    :param data: A dictionary of all the data I want to save, this is SUPER hardcoded, please fix my code
+    :param attributes: A dictionary of all the attributes from the simulation
+    :param filename: Name of your file
+    :param filepath: Name of save file path
+    :return: null
+    """
     f = h5py.File(filepath + filename + ".hdf5", "a")
 
     for i in attributes.keys():
         f.attrs[str(i)] = attributes[i]
 
     # this is a cheap and quick way, very hardcoded
+    # I am only saving what I need
     basefees_stats_save = f.create_group("basefees_stats")
     basefees_stats_save.create_dataset("basefees_variance",
                                        data=list(data["basefees_stats"]["basefees_variance"].values()),
@@ -32,7 +41,15 @@ def save_simulation(data, attributes, filename, filepath):
     print("Saving hdf5 as " + filename + ".hdf5")
 
 def save_figure(data,filename,filepath,iterations=None):
-    # Disable figure showing
+    """
+    Plots basefee figures. The code is very hardcoded please fix it
+    :param data: A dictionary of all the data I want to plot, this is SUPER hardcoded, please fix my code
+    :param filename: Name of your file
+    :param filepath: Name of save file path
+    :param iterations: This is so that it could plot both single iteration and multiple iterations. This just changes the plotting title
+    :return: null
+    """
+    # Disable figure showing since this would crash code when run on cluster
     if "cluster" in socket.gethostname():
         import matplotlib
         matplotlib.use('agg')
@@ -54,6 +71,7 @@ def save_figure(data,filename,filepath,iterations=None):
 
 if __name__ == "__main__":
     if "cluster" in socket.gethostname():  # cluster
+        # I use this because I will be passing in parameters with a shellscript
         # Initialize variables
         call_data_standard_value_input = int(sys.argv[1])
         call_data_learning_rate = str(sys.argv[2])
@@ -64,6 +82,7 @@ if __name__ == "__main__":
         call_data_max_limit = call_data_target_limit*2
         step_count = int(sys.argv[4])
         direc = str(sys.argv[5])
+        special_generation_file = str(sys.argv[6])
         # Initialize directory
         parent_dir = "/home/yteoh/camcos_results/" + direc +"/"
         if not os.path.exists(parent_dir):
@@ -71,7 +90,6 @@ if __name__ == "__main__":
                 os.mkdir(parent_dir)
             except FileExistsError:
                 print("Directory already exists")
-
         data_dir = "/home/yteoh/camcos_results/" + direc + "/data/"
         image_dir = "/home/yteoh/camcos_results/" + direc + "/figures/"
 
@@ -82,10 +100,12 @@ if __name__ == "__main__":
         call_data_target_limit = 25000
         call_data_max_limit = call_data_target_limit * 2
         step_count = 10
+        special_generation_file = "specialGenerationNFT.csv"
         # Initialize directory
         data_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/data/"
         image_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/figures/"
 
+    # Make directories if they don't exist
     if not os.path.exists(data_dir):
         try:
             os.mkdir(data_dir)
@@ -97,18 +117,20 @@ if __name__ == "__main__":
         except FileExistsError:
             print("File already exists")
 
-    # Basefee initialization
+    # Basefee initialization for gas
     bf_standard_value = 38.100002694
     bf_standard = Basefee(1.0 / 8, 15000000, 30000000, bf_standard_value)
 
+    # Basefee initialization for calldata
     call_data_standard_value = call_data_standard_value_input
     call_data_standard = Basefee(call_data_learning_rate, call_data_target_limit, call_data_max_limit, call_data_standard_value)
 
     # Simulator initialization
-    j_r = JointResources(["gas", "call_data"], bf_standard, call_data_standard)
+    j_r = JointResources(["gas", "call_data"], bf_standard, call_data_standard,filename=special_generation_file)
     demand = Demand(2000, 0, 400, j_r)
     sim = Simulator(demand)
 
+    # Get returned data and save them
     basefees_data, block_data, mempools_data, basefees_stats = sim.simulate(step_count)
     data = {
         "basefees_data": basefees_data,
@@ -133,6 +155,7 @@ if __name__ == "__main__":
         "txns_per_turn":sim.demand.txns_per_turn
     }
 
+    # When we save the file as an hdf5, we don't want it to overwrite so each iteration has a unique uuid appended
     uniqueid = str(uuid.uuid1()).rsplit("-")[0]
     filename = "d-{0:.4f}-call_data_target-{1:d}-uuid-{uuid}".format(call_data_learning_rate,call_data_target_limit,uuid=uniqueid)
 
