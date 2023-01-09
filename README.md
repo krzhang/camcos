@@ -9,8 +9,8 @@ This is a repository of centralized CAMCOS stuff starting with Spring 2021. The 
 ## A Comprehensive Guide to Running The Simulations
 
 ### 1. Transaction Data Scraper - *scrapers/scraper.py*
-- Choose a start and end block number and enter it at line 24 and 25
-- You can check the dates of the block given a block number with code from line 16 to 19
+- Choose a start and end block number and enter it at line 45 and 46
+- You can check the dates of the block given a block number with code from line 37 to 40
 - Eg: Say you want a period of high demand. Block number 14170700 to 14177000 are transactions done on February 9, 2022 when the 2nd most expensive NFT was sold
 - This should output csv files called "transactionData.csv" and "blockData.csv" under the /data directory.  
 ### 2. Transaction Modelling (Adam Aslam's code) - *simulations/notebooks/meip-1559_Joint_Distribution_Fitting.ipynb*

@@ -8,6 +8,27 @@ Given a starting and ending block number, this program scrapes block and transac
 Ensure that you have the web3 library installed. If not, use "pip install web3"
 """
 
+def calldata_gas(hex_string):
+    """
+    This function calculates the total amount of calldata gas
+    :param hex_string: Input string aka calldata
+    :return: calldata gas
+    """
+    hex_string = hex_string[2:] # Remove 0x from the string
+    zero_bytes = 0
+    non_zero_bytes = 0
+
+    # Iterate through the hexadecimal string, two characters at a time
+    for i in range(0, len(hex_string), 2):
+        byte = int(hex_string[i:i + 2], 16) # Get the current byte as an integer
+        if byte == 0:
+            zero_bytes += 1
+        else:
+            non_zero_bytes += 1
+    
+    # Returns gas of calldata
+    return zero_bytes * 4 + non_zero_bytes * 16
+
 if __name__ == "__main__":
     # Setup RPC endpoint, here we are using a public one from ankr
     web3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
@@ -44,21 +65,19 @@ if __name__ == "__main__":
         # Loops through all transactions in the block
         for i in range(len(block.transactions)):
             tx = web3.eth.get_transaction(block.transactions[i])
-            input_string = tx.input
-            # When the call data is more than 10000, the input string is manually set to null since it would overflow. This is a temporary solution
-            # TODO: Fix overflow issue
-            if len(input_string)>10000:
-                input_string = ""
+            calldataGas = calldata_gas(tx.input)
             transaction_data_single = {
-                "blockNumber":blockNumber,
-                "gas":tx.gas,
-                "gasPrice":tx.gasPrice,
-                "input":input_string,
-                "callDataUsage":len(input_string),
+                "blockNumber": blockNumber,
+                "gas": tx.gas,
+                "gasPrice": tx.gasPrice,
+                "executionGas": tx.gas - calldataGas, # Take away calldata gas to get execution gas
+                "callDataUsage": calldata_gas(tx.input),
+                "callDataLength": len(tx.input),
                 "nonce": tx.nonce,
-                "to":tx.to,
-                "from":tx["from"]
+                "to": tx.to,
+                "from": tx["from"]
             }
+
             transaction_data.append(transaction_data_single)
 
     # Output files should be under data/. You may rename the files here
