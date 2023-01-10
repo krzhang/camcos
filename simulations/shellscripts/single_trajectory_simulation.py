@@ -100,7 +100,7 @@ if __name__ == "__main__":
         call_data_target_limit = 25000
         call_data_max_limit = call_data_target_limit * 2
         step_count = 10
-        special_generation_file = "specialGeneration.csv"
+        special_generation_file = "specialGenerationNFT.csv"
         # Initialize directory
         data_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/data/"
         image_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/figures/"

@@ -18,6 +18,7 @@ This is a repository of centralized CAMCOS stuff starting with Spring 2021. The 
 - Basically, what you would get is a csv file called specialGeneration.csv, which can be found under the directory /data. This file will be used later
 - Make sure that line 20 "file=" is set to the file name you created in step 1. By default, it should be transactionData.csv
 - You can tune the fitting parameter at ratioLimitGas at line 2 of the 3rd block. Recommended to be between 0.01 and 0.02
+- **Note: When you generate the csv file, please add commas at Cov Lognormal Parameter for the last row. Refer to specialGenerationNFT.csv. I have yet to fix this bug**
 ### 3. Running Simulations
 - Now we are finally ready to start simulating the Ethereum blockchain! There are many parameters that you can tune and choose from, the main ones are **resource, knapsack solver, and transaction decay time**
 - We will go through what each parameter means and how to setup your simulator. For reference, all example code can be found under simulations/notebooks/example_test_cases.ipynb
