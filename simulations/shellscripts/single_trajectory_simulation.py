@@ -64,7 +64,7 @@ def save_figure(data,filename,filepath,iterations=None):
     plt.ylabel("Basefee (in Gwei)")
     plt.plot(data["basefees_data"]["gas"], label="gas")
     basefees_data_space = [x + 1 for x in data["basefees_data"]["call_data"]]
-    plt.plot(basefees_data_space, label="call_data")
+    plt.plot(basefees_data_space, label="calldata")
     plt.legend(loc="upper left")
     plt.savefig(filepath + filename + ".png")
     print("Saving figure as " + filename + ".png")
