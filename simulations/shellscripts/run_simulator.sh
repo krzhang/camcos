@@ -14,12 +14,12 @@ call_data_standard_value=25
 call_data_learning_rate=1/8
 call_data_target_limit=25000
 step_count=400
-directory="2023_01_10"
+directory="2023_01_10_1"
 filename="specialGeneration.csv"
 
 #call_data_learning_rates=("1/8" "3/8" "5/8")
-call_data_standard_values=("10" "25" "50" "100")
-call_data_target_limits=("1000" "10000" "20000" "40000" "60000")
+call_data_standard_values=("10" "25" "50")
+call_data_target_limits=("100000" "500000" "1000000")
 
 for i in "${call_data_standard_values[@]}"
 do
