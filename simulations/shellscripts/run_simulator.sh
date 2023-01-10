@@ -18,8 +18,8 @@ directory="2023_01_10_1"
 filename="specialGeneration.csv"
 
 #call_data_learning_rates=("1/8" "3/8" "5/8")
-call_data_standard_values=("10" "25" "50")
-call_data_target_limits=("100000" "500000" "1000000")
+call_data_standard_values=("25")
+call_data_target_limits=("20000" "25000" "30000" "50000" "70000" "90000")
 
 for i in "${call_data_standard_values[@]}"
 do
