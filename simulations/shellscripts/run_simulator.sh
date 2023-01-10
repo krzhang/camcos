@@ -14,17 +14,18 @@ call_data_standard_value=25
 call_data_learning_rate=1/8
 call_data_target_limit=25000
 step_count=400
-directory="2022_12_11"
+directory="2023_01_10"
 filename="specialGeneration.csv"
 
-call_data_learning_rates=("1/8" "3/8" "5/8")
-call_data_target_limits=("21500" "22000" "22500" "23000" "23500" "24000" "24500" "25000")
+#call_data_learning_rates=("1/8" "3/8" "5/8")
+call_data_standard_values=("10" "25" "50" "100")
+call_data_target_limits=("1000" "10000" "20000" "40000" "60000")
 
-for i in "${call_data_learning_rates[@]}"
+for i in "${call_data_standard_values[@]}"
 do
   for j in "${call_data_target_limits[@]}"
   do
-  srun --ntasks 8 python /home/yteoh/camcos/simulations/shellscripts/single_trajectory_simulation.py $call_data_standard_value "$i" "$j" $step_count $directory $filename
-  srun --ntasks 1 python /home/yteoh/camcos/simulations/shellscripts/average_trajectories.py $call_data_standard_value "$i" "$j" $step_count $directory
+  srun --ntasks 8 python /home/yteoh/camcos/simulations/shellscripts/single_trajectory_simulation.py "$i" $call_data_learning_rate "$j" $step_count $directory $filename
+  srun --ntasks 1 python /home/yteoh/camcos/simulations/shellscripts/average_trajectories.py "$i" $call_data_learning_rate "$j" $step_count $directory
   done
 done
