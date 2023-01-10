@@ -46,7 +46,10 @@ if __name__ == "__main__":
             print("File already exists")
 
     # Set filename search based on parameters
-    filename_search = "d-{0:.4f}-call_data_target-{1:d}".format(call_data_learning_rate, call_data_target_limit)
+    filename_search = "standardvalue-{0:d}-d-{1:.4f}-call_data_target-{2:d}".format(call_data_standard_value_input,
+                                                                                        call_data_learning_rate,
+                                                                                        call_data_target_limit)
+
     f = h5py.File(average_dir+filename_search+".hdf5","w")
 
     # parameters to be averaged

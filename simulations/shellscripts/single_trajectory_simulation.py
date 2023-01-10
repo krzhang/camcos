@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     # When we save the file as an hdf5, we don't want it to overwrite so each iteration has a unique uuid appended
     uniqueid = str(uuid.uuid1()).rsplit("-")[0]
-    filename = "d-{0:.4f}-call_data_target-{1:d}-uuid-{uuid}".format(call_data_learning_rate,call_data_target_limit,uuid=uniqueid)
+    filename = "standardvalue-{0:d}-d-{1:.4f}-call_data_target-{2:d}-uuid-{uuid}".format(call_data_standard_value,call_data_learning_rate,call_data_target_limit,uuid=uniqueid)
 
     save_simulation(data,attributes,filename,data_dir)
     save_figure(data,filename,image_dir)
