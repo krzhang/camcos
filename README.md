@@ -9,14 +9,16 @@ This is a repository of centralized CAMCOS stuff starting with Spring 2021. The 
 ## A Comprehensive Guide to Running The Simulations
 
 ### 1. Transaction Data Scraper - *scrapers/scraper.py*
-- Choose a start and end block number and enter it at line 24 and 25
-- You can check the dates of the block given a block number with code from line 16 to 19
+- Choose a start and end block number and enter it at line 45 and 46
+- You can check the dates of the block given a block number with code from line 37 to 40
 - Eg: Say you want a period of high demand. Block number 14170700 to 14177000 are transactions done on February 9, 2022 when the 2nd most expensive NFT was sold
 - This should output csv files called "transactionData.csv" and "blockData.csv" under the /data directory.  
 ### 2. Transaction Modelling (Adam Aslam's code) - *simulations/notebooks/meip-1559_Joint_Distribution_Fitting.ipynb*
 - This process takes in the scraped transaction data outputs an accurate transaction model for these 2 resources, ie gas and call data length
 - Basically, what you would get is a csv file called specialGeneration.csv, which can be found under the directory /data. This file will be used later
 - Make sure that line 20 "file=" is set to the file name you created in step 1. By default, it should be transactionData.csv
+- You can tune the fitting parameter at ratioLimitGas at line 2 of the 3rd block. Recommended to be between 0.01 and 0.02
+- **Note: When you generate the csv file, please add commas at Cov Lognormal Parameter for the last row. Refer to specialGenerationNFT.csv. I have yet to fix this bug**
 ### 3. Running Simulations
 - Now we are finally ready to start simulating the Ethereum blockchain! There are many parameters that you can tune and choose from, the main ones are **resource, knapsack solver, and transaction decay time**
 - We will go through what each parameter means and how to setup your simulator. For reference, all example code can be found under simulations/notebooks/example_test_cases.ipynb

@@ -11,17 +11,17 @@ if __name__ == "__main__":
     call_data_max_limit = call_data_target_limit * 2
     step_count = 10
     # Initialize directory
-    data_dir = "/Users/teohyikhaw/Documents/camcos_results/2022_12_11/averages/"
-    image_dir = "/Users/teohyikhaw/Documents/camcos_results/testing_file/averaged_figures/"
+    data_dir = "/Users/teohyikhaw/Documents/camcos_results/final_result_NFT/averages/"
+    image_dir = "/Users/teohyikhaw/Documents/camcos_results/final_result_NFT/averaged_figures/"
 
     # learning_rates = [1/13, 1/11,1/8, 3/8, 5/8]
-    target_limits = [21500, 22500, 23500, 24500]
+    target_limits = [72500, 75000, 77500, 90000]
     learning_rates_plot = ["5/8", "3/8" ,"1/8","1/11","1/13"]
     learning_rates = []
     for i in learning_rates_plot:
         a, b = i.split("/")
         learning_rates.append(int(a) / int(b))
-    heatmap = True # set to false to plot individual grid_plot
+    heatmap = False # set to false to plot individual grid_plot
 
     variance_gas = np.zeros((len(learning_rates),len(target_limits)))
     variance_call_data = np.zeros((len(learning_rates), len(target_limits)))

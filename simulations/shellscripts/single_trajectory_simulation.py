@@ -64,7 +64,7 @@ def save_figure(data,filename,filepath,iterations=None):
     plt.ylabel("Basefee (in Gwei)")
     plt.plot(data["basefees_data"]["gas"], label="gas")
     basefees_data_space = [x + 1 for x in data["basefees_data"]["call_data"]]
-    plt.plot(basefees_data_space, label="call_data")
+    plt.plot(basefees_data_space, label="calldata")
     plt.legend(loc="upper left")
     plt.savefig(filepath + filename + ".png")
     print("Saving figure as " + filename + ".png")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     # When we save the file as an hdf5, we don't want it to overwrite so each iteration has a unique uuid appended
     uniqueid = str(uuid.uuid1()).rsplit("-")[0]
-    filename = "d-{0:.4f}-call_data_target-{1:d}-uuid-{uuid}".format(call_data_learning_rate,call_data_target_limit,uuid=uniqueid)
+    filename = "standardvalue-{0:d}-d-{1:.4f}-call_data_target-{2:d}-uuid-{uuid}".format(call_data_standard_value,call_data_learning_rate,call_data_target_limit,uuid=uniqueid)
 
     save_simulation(data,attributes,filename,data_dir)
     save_figure(data,filename,image_dir)
