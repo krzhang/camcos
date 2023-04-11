@@ -1,7 +1,7 @@
-from web3 import Web3, EthereumTesterProvider
+from web3 import Web3
 import pandas as pd
 import sys; sys.path.insert(0, '..')  # this adds the parent directory into the path, since we want simulations from the parent directory
-from settings import DATA_PATH
+from camcos.simulations.settings import DATA_PATH
 
 """
 Given a starting and ending block number, this program scrapes block and transaction data and outputs them into a csv
@@ -52,14 +52,15 @@ if __name__ == "__main__":
         print(block)
 
         block_data_single = {
-            "blockNumber":blockNumber,
-            "gasLimit":block.gasLimit,
+            "blockNumber": blockNumber,
+            "gasLimit": block.gasLimit,
             "gasUsed": block.gasUsed,
-            "baseFeePerGas":block.baseFeePerGas,
-            "difficulty":block.difficulty,
-            "hash":block.hash.hex(),
-            "transactions":[x.hex() for x in block.transactions]
+            "baseFeePerGas": block.baseFeePerGas,
+            "difficulty": block.difficulty,
+            "hash": block.hash.hex(),
+            "transactions": [x.hex() for x in block.transactions]
         }
+
         block_data.append(block_data_single)
 
         # Loops through all transactions in the block
@@ -70,18 +71,21 @@ if __name__ == "__main__":
                 "blockNumber": blockNumber,
                 "gas": tx.gas,
                 "gasPrice": tx.gasPrice,
-                "executionGas": tx.gas - calldataGas, # Take away calldata gas to get execution gas
+                "executionGas": tx.gas - calldataGas,  # Take away calldata gas to get execution gas
                 "callDataUsage": calldata_gas(tx.input),
                 "callDataLength": len(tx.input),
                 "nonce": tx.nonce,
                 "to": tx.to,
-                "from": tx["from"]
-            }
+                "from": tx["from"],
+                "calldata": tx.input
+                "transactionID": block.transactions[i].hex()
+    }
 
             transaction_data.append(transaction_data_single)
 
     # Output files should be under data/. You may rename the files here
     df = pd.DataFrame(block_data)
-    df.to_csv(DATA_PATH+"/"+"blockData.csv")
+    df.to_csv(str(DATA_PATH / "blockData.csv"))
     df2 = pd.DataFrame(transaction_data)
-    df2.to_csv(DATA_PATH+"/"+"transactionData.csv")
+    df2.to_csv(str(DATA_PATH / "transactionData.csv"))
+
