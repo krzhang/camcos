@@ -80,7 +80,7 @@ if __name__ == "__main__":
                 "nonce": tx.nonce,
                 "to": tx.to,
                 "from": tx["from"],
-                "calldata": tx.input,
+                "calldata": tx.input, ### NOTE: This is in hexadecimal format of CallData
                 "transactionID": block.transactions[i].hex()
     }
 
