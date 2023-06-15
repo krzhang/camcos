@@ -42,6 +42,7 @@ if __name__ == "__main__":
     block_data = []
     transaction_data = []
     # Set from which block to which block that you'd like to scrape from
+    ### Below is the dataset for Fall 2022, you can start from here to get the first dataset
     startBlockNum = 15627832
     endBlockNum = 15627932
     # Uncomment the following two lines for Spring 2023 dataset
