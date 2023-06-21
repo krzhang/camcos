@@ -96,3 +96,7 @@ of directory whenever you run this, if not the averaging will have problems.
 **d. plot_heatmap.py** - This code is used to plot a grid plot and heatmap for varying learning rates and 
 target limit of calldata. The heatmap plots variance of basefees of calldata. Note that I first copied my files from 
 the cluster to my local machine before plotting
+
+**e. exploratory.py** - This is located within the scraper folder, please change the name of the CSV file to the dataset that you want to use, 
+it will group the rows by CalldataUsage and filter them into random 5 transactions with some common CalldataUsage (0, 608, 64, 204).
+You may change the output CSV of this file as well so you can not accidentally overwrite the other filtered dataset output.
