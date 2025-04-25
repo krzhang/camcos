@@ -55,3 +55,26 @@ class BluffPlayer(Player):
             return (WAIT_AND_UNDERBID_IF_ABLE, EPSILON, self.submit_by)
         else:
             return (WAIT_AND_UNDERBID_IF_ABLE, self.val/2, self.submit_by)
+
+class GaussianRangePlayer(Player):
+    """ As requested, a player with some range of scaling of their bids. """
+
+    def __init__(self, player_id, speed, range):
+        """ 
+        example range: [0.75, 0.33] for mean/variance. The range is to be multiplied
+        with the evaluation.
+        """
+        self.player_id = player_id
+        self.speed = speed 
+        self.range = range
+    
+    def determine_strategy(self):
+        """
+        Unlike the naive self.val/2, this player will take the valuations and then
+        scale by something in the range... of course, the player will not overbid 
+        the valuation.
+        """
+
+        bid_prop = min(random.gauss(self.range[0], self.range[1]),1)*self.val
+        # take the min to not bid too much
+        return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop, self.submit_by)

@@ -10,7 +10,8 @@ class Auction:
     def conduct_round(self):
         round_infos = {player.player_id: player.generate_round_info() for player in self.players}
         # pairs of (val, submit_by)
-        
+
+        player_ids = [player.player_id for player in self.players] 
         strategies = {player.player_id: player.determine_strategy() for player in self.players}
 
         cutoff_time = random.uniform(0.7, 1.0) # when this simulator actually stops taking bids
