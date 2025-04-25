@@ -21,7 +21,10 @@ class Auction:
                             if strategies[i][1] < cutoff_time],
                            key = lambda x: x[1])
         # (bidder, time) for time that's eligible.
-
+        # if there is a tie on timing, we randomize it
+        if len(bid_order) == 2 and bid_order[0][1] == bid_order[1][1]:
+            bid_order = random.shuffle(bid_order)
+        
         winning_bid = None
         winning_value = None
         if len(bid_order) == 0:
@@ -33,6 +36,7 @@ class Auction:
                 winning_bid = strategies[winner][1]
             else:
                 assert len(bid_order) == 2
+                
                 # player 2 wins if they find it worthwhile underbidding player 1
                 first_player = bid_order[0][0]
                 second_player = bid_order[1][0]
@@ -58,13 +62,15 @@ class Auction:
     def run_simulation(self, num_rounds):
         round_results = []
         winnings = [0.0, 0.0]
+        wincount = [0,0]
         for _ in range(num_rounds):
             round_data = self.conduct_round()
             if round_data["winner"][0] is not None:
                 w = round_data["winner"][0]
                 winnings[w] += round_data["winner"][2]
+                wincount[w] += 1
             round_results.append(round_data)
-        return (round_results, winnings)
+        return (round_results, winnings, wincount)
 
     def get_results(self):
         return self.round_results
@@ -74,7 +80,7 @@ def test(num_rounds):
     speeds = [1.0, 1.0] # same for now...
     players = [Player(player_id=i, speed=speeds[i]) for i in range(2)]
     auction = Auction(players)
-    round_results, winnings = auction.run_simulation(num_rounds)
+    round_results, winnings, wincount = auction.run_simulation(num_rounds)
 
     for i, result in enumerate(round_results, start=1):
         print(f"Round {i}")
@@ -83,3 +89,4 @@ def test(num_rounds):
         print("\n")
     
     print(f"Winnings: {winnings}")
+    print(f"Win counts: {wincount}")
