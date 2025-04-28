@@ -1,6 +1,6 @@
 import random
 from formatting import FormatPrinter
-from player import Player
+import player
 import numpy as np
 
 class Auction:
@@ -9,12 +9,27 @@ class Auction:
         assert len(players) == 2 # support more players later
 
     def conduct_round(self):
-        round_infos = {player.player_id: player.generate_round_info() for player in self.players}
+        # round_infos = {player.player_id: player.generate_round_info() for player in self.players}
         # pairs of (val, submit_by)
-        
-        strategies = {player.player_id: player.determine_strategy() for player in self.players}
+        # strategies = {player.player_id: player.determine_strategy() for player in self.players}
+
 
         cutoff_time = random.uniform(0.7, 1.0) # when this simulator actually stops taking bids
+
+        p1 = self.players[0] # pick slow bidder
+        p2 = self.players[1] # pick fast bidder
+
+        # p1 and p2 both generate their valuation and submit time
+        p1_val, p1_submit_by = p1.generate_round_info()
+        p2_val, p2_submit_by = p2.generate_round_info()
+        
+        # empty dictionary to store the bidding strategies
+        strategies = {}
+
+        # p1 bids normally
+        strategies[p1.player_id] = p1.determine_strategy()
+        # p2 reacts to p1
+        strategies[p2.player_id] = p2.determine_strategy(p1_submit_by, cutoff_time)
         
         # determining the winner and price logic
 
@@ -88,7 +103,6 @@ def test(num_rounds):
     
     print(f"Winnings: {winnings}")
 
-import main; main.test(1000)
 
 
 

@@ -9,41 +9,34 @@ WAIT_AND_UNDERBID_IF_ABLE = 0 # right now this is the only "strategy code" but t
 class Player:
     # should make more classes, but for now
   
-    def __init__(self, player_id, speed, bid_percentage):
+    def __init__(self, player_id, speed):
         self.player_id = player_id
         self.speed = speed
-        self.bid_percentage = bid_percentage
         # valuation
         # speed 
 
-class Player:
-    def __init__(self, player_id, speed, bid_percentage):
-        self.player_id = player_id
-        self.speed = speed
-        self.bid_percentage = bid_percentage
-
-
     def generate_round_info(self):
-        self.val = random.uniform(0,1)
-        self.submit_by = random.uniform(0, self.speed)
-        bid_mean, bid_std = 0.75, 0.329
-
-        a = (0 - bid_mean) / bid_std
-        b = (1 - bid_mean) / bid_std
-
-        self.bid_percentage = float(truncnorm.rvs(a, b, loc = bid_mean, scale = bid_std))
-        self.bid = self.val * self.bid_percentage
-
-        return (self.val, self.submit_by)
-
+        """
+        Placeholder for generating the information the player gets that might be unique to the
+        round.
+        Replace with actual logic.
+        """
+        val = random.uniform(0, 1)  # Example: Random valuation between 0 and 100
+        submit_by = random.uniform(self.speed[0], self.speed[1]) # the time the speed forces you to submit by
+        self.val = val
+        self.submit_by = submit_by
+        return (val, submit_by)
+      
     def determine_strategy(self):
-        return (WAIT_AND_UNDERBID_IF_ABLE, self.bid, self.submit_by)
+        """
+        Placeholder for determining the strategy based on valuation and internal parameters.
+        Replace with actual logic.
 
-class FastPlayer(Player):
-    
-    def determine_strategy(self):
-
-        return (WAIT_AND_UNDERBID_IF_ABLE, self.bid, self.submit_by)
+        Assume generate_round_info() was already called.
+        """
+        # in the simplest case, bid the valuation at a discount by the submit_by time, or underbid
+        # the 
+        return (WAIT_AND_UNDERBID_IF_ABLE, self.val/2, self.submit_by)
 
 class NaivePlayer(Player):
 
@@ -64,3 +57,60 @@ class BluffPlayer(Player):
             return (WAIT_AND_UNDERBID_IF_ABLE, EPSILON, self.submit_by)
         else:
             return (WAIT_AND_UNDERBID_IF_ABLE, self.val/2, self.submit_by)
+
+class GaussianRangePlayer(Player):
+    """ As requested, a player with some range of scaling of their bids. """
+
+    def __init__(self, player_id, speed, range):
+        """ 
+        example range: [0.75, 0.33] for mean/variance. The range is to be multiplied
+        with the evaluation.
+        """
+        self.player_id = player_id
+        self.speed = speed 
+        self.range = range
+
+    def determine_strategy(self):
+        """
+        Unlike the naive self.val/2, this player will take the valuations and then
+        scale by something in the range... of course, the player will not overbid 
+        the valuation.
+        """
+        bid_prop = min(random.gauss(self.range[0], self.range[1]), 1)
+        return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop * self.val, self.submit_by)
+    
+class ReactiveGaussianRangePlayer(Player):
+    """ 
+    A player that reacts based on whether it sees p1's bid.
+    """
+
+    def __init__(self, player_id, speed, range, p1_range):
+        self.player_id = player_id
+        self.speed = speed
+        self.range = range
+        self.p1_range = p1_range
+
+    def determine_strategy(self, p1_submit_by, cutoff_time):
+        """
+        If p2 sees p1's bid (based on submit_by timing),
+        p2 adjusts its own bid accordingly.
+        """
+        bid_prop_p2 = min(random.gauss(self.range[0], self.range[1]), 1)
+        original_bid_p2 = bid_prop_p2 * self.val
+
+        if self.submit_by > p1_submit_by and p1_submit_by < cutoff_time:
+            # p2 sees p1's bid and reacts
+            guessed_p1_prop = min(random.gauss(self.p1_range[0], self.p1_range[1]), 1)
+            guessed_p1_bid = guessed_p1_prop * self.val  # p2 uses its own valuation to guess
+
+            if guessed_p1_bid > original_bid_p2:
+                final_bid = 0.5 * original_bid_p2
+            else:
+                final_bid = (guessed_p1_bid + original_bid_p2)/2
+
+            return (WAIT_AND_UNDERBID_IF_ABLE, final_bid, self.submit_by)
+
+        else:
+            # p2 doesn't see p1 then bid normal
+            return (WAIT_AND_UNDERBID_IF_ABLE, original_bid_p2, self.submit_by)
+        
