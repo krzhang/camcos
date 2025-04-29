@@ -101,13 +101,16 @@ class ReactiveGaussianRangePlayer(Player):
             guessed_p1_prop = min(random.gauss(self.p1_range[0], self.p1_range[1]), 1)
             guessed_p1_bid = guessed_p1_prop * self.val  # p2 uses its own valuation to guess
 
-            if guessed_p1_bid > original_bid_p2:
+            # if p2 guesses p1 will take win the block, and is still profitable, change p2 bid to overtake
+            if self.val > guessed_p1_bid > original_bid_p2:
+                final_bid = guessed_p1_bid
+            # if p2 guesses p1 will overly overbid, stay reserved
+            elif guessed_p1_bid > self.val:
                 final_bid = 0.8 * original_bid_p2
+            # if p2 guesses p1 will underbid, soften p2 bid to gain more profit (is in assumption they win)
             else:
                 final_bid = (guessed_p1_bid + original_bid_p2)/2
-
-            return (WAIT_AND_UNDERBID_IF_ABLE, final_bid, self.submit_by)
-
+        
         else:
             # p2 doesn't see p1 then bid normal
             return (WAIT_AND_UNDERBID_IF_ABLE, original_bid_p2, self.submit_by)
