@@ -33,7 +33,7 @@ p2_speeds = [(0.2, 0.6), (0.25, 0.65), (0.3, 0.7), (0.35, 0.75), (0.4, 0.8)]
 # saving as csv file
 with open('grid_simulation_results.csv', mode = 'w', newline = '') as file:
     writer = csv.writer(file)
-    writer.writerow(["p1_speed", "p2_speed", "p1_winning%_over_total", "p2_winning%_over_total", "winning_gap"])
+    writer.writerow(["p1_speed", "p2_speed", "p1_winning%_over_total", "p2_winning%_over_total", "winning_gap(p1 over p2)"])
 
     # loop over grid
     for p1_speed in p1_speeds:

@@ -110,7 +110,9 @@ class ReactiveGaussianRangePlayer(Player):
             # if p2 guesses p1 will underbid, soften p2 bid to gain more profit (is in assumption they win)
             else:
                 final_bid = (guessed_p1_bid + original_bid_p2)/2
-        
+            
+            return (WAIT_AND_UNDERBID_IF_ABLE, final_bid, self.submit_by)
+
         else:
             # p2 doesn't see p1 then bid normal
             return (WAIT_AND_UNDERBID_IF_ABLE, original_bid_p2, self.submit_by)
