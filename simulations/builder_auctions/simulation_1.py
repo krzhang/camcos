@@ -40,12 +40,12 @@ with open('grid_simulation_results.csv', mode = 'w', newline = '') as file:
         for p2_speed in p2_speeds:
             p1 = player.GaussianRangePlayer(0, # p1: slow bidder
                                 p1_speed, # p1 speed: range of submit time including latency factor in mind(bids early, high latency)
-                                (0.887, 0.417), # p1 mean and variance for bid proportion distribution
+                                (0.75, 0.33), # p1 mean and variance for bid proportion distribution
                                 )
             p2 = player.ReactiveGaussianRangePlayer(1, # p2: fast bidder
                                                     p2_speed, # p2 speed: range of submit time(bids later, low latency)
-                                                    (0.894, 0.595), # p2 mean and variance for bid proportion distribution
-                                                    (0.887, 0.417) # p1's bid proportion distribution known to p2
+                                                    (0.88, 0.42), # p2 mean and variance for bid proportion distribution
+                                                    (0.75, 0.33) # p1's bid proportion distribution known to p2
                                                     )
             auction = Auction([p1,p2])
             round_results, winnings = auction.run_simulation(100000)
