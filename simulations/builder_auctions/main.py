@@ -14,7 +14,7 @@ class Auction:
         # strategies = {player.player_id: player.determine_strategy() for player in self.players}
 
 
-        cutoff_time = random.uniform(0.7, 1.0) # when this simulator actually stops taking bids
+        cutoff_time = random.uniform(0.7, 0.9) # when this simulator actually stops taking bids
 
         p1 = self.players[0] # pick slow bidder
         p2 = self.players[1] # pick fast bidder
@@ -23,15 +23,11 @@ class Auction:
         p1_val, p1_submit_by = p1.generate_round_info()
         p2_val, p2_submit_by = p2.generate_round_info()
         
-        # empty dictionary to store the bidding strategies
-        strategies = {}
-
-        # p1 bids normally
-        strategies[p1.player_id] = p1.determine_strategy()
-        # p2 reacts to p1
-        strategies[p2.player_id] = p2.determine_strategy(p1_submit_by, cutoff_time)
-        
-        # determining the winner and price logic
+        # dictionary to store the bidding strategies for each player
+        strategies = {
+            p1.player_id: p1.determine_strategy(),
+            p2.player_id: p2.determine_strategy(p1_submit_by, cutoff_time)
+        }
 
         bid_order = sorted([(i, strategies[i][2]) for i in range(len(self.players))
                             if strategies[i][2] < cutoff_time],
@@ -91,7 +87,7 @@ class Auction:
 # Example usage
 def test(num_rounds):
     speeds = [1.0, 1.0] # same for now...
-    players = [Player(player_id=i, speed=speeds[i]) for i in range(2)]
+    players = [player(player_id=i, speed=speeds[i]) for i in range(2)]
     auction = Auction(players)
     round_results, winnings = auction.run_simulation(num_rounds)
 

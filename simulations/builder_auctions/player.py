@@ -1,6 +1,4 @@
 import random
-from scipy.stats import truncnorm
-
 
 EPSILON = 0.000001
 
@@ -21,7 +19,7 @@ class Player:
         round.
         Replace with actual logic.
         """
-        val = random.uniform(0, 1)  # Example: Random valuation between 0 and 100
+        val = random.uniform(0.7, 0.9)  # Example: Random valuation between 0 and 100
         submit_by = random.uniform(self.speed[0], self.speed[1]) # the time the speed forces you to submit by
         self.val = val
         self.submit_by = submit_by
@@ -104,7 +102,7 @@ class ReactiveGaussianRangePlayer(Player):
             guessed_p1_bid = guessed_p1_prop * self.val  # p2 uses its own valuation to guess
 
             if guessed_p1_bid > original_bid_p2:
-                final_bid = 0.5 * original_bid_p2
+                final_bid = 0.8 * original_bid_p2
             else:
                 final_bid = (guessed_p1_bid + original_bid_p2)/2
 
