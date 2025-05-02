@@ -78,6 +78,10 @@ class Auction:
     def get_results(self):
         return self.round_results
 
+
+
+
+
 # Example usage
 def test(num_rounds):
     speeds = [1.0, 1.0] # same for now...
