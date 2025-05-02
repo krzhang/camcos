@@ -51,11 +51,19 @@ players = generate_players(
 auction = Auction(players, cutoff_time_range)
 round_results, winnings = auction.run_simulation(num_rounds)
 
+# Count number of wins per player
+win_counts = [0] * len(players)
+for round_data in round_results:
+    winner_info = round_data["winner"]
+    if winner_info is not None:
+        win_counts[winner_info[0]] += 1
+
 ### ====== Display Sorted Results ====== ###
 
 # Sort the players by their winnings and include necessary details
 sorted_players = sorted(
-    [(p_id, winnings[p_id], 'Gaussian         ' if isinstance(player, GaussianRangePlayer) else 'Gaussian Reactive',
+    [(p_id, winnings[p_id], win_counts[p_id],
+      'Gaussian' if isinstance(player, GaussianRangePlayer) else 'Reactive',
       player.speed, player.range[0], player.range[1], 
       player.others_range[0] if isinstance(player, ReactiveGaussianRangePlayer) else None,
       player.others_range[1] if isinstance(player, ReactiveGaussianRangePlayer) else None) 
@@ -65,8 +73,9 @@ sorted_players = sorted(
 
 # Print sorted results
 print("\nPlayers Sorted by Winnings:")
-for p_id, win, strat, speed, bid_mean, bid_std, others_mean, others_std in sorted_players:
-    print(f"  Player {p_id} | {strat} | Winnings: {win:.4f} | Speed: ({speed[0]:.3f}, {speed[1]:.3f}) | "
+for p_id, win_amt, win_count, strat, speed, bid_mean, bid_std, others_mean, others_std in sorted_players:
+    print(f"  Player {p_id} | {strat} | Wins: {win_count:5d} | Winnings: {win_amt:.4f} | "
+          f"Speed: ({speed[0]:.3f}, {speed[1]:.3f}) | "
           f"Mean: {bid_mean:.3f} | Stddev: {bid_std:.3f}", end="")
     if others_mean is not None:
         print(f" | Others' Mean: {others_mean:.3f} | Others' Stddev: {others_std:.3f}")
