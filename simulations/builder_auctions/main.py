@@ -4,6 +4,9 @@ from player import *
 
 ### ====== Configuration ====== ###
 
+## Set to True to print configuration settings
+print_settings = True
+
 # Assign number of players and how many are reactive gaussian players, the rest will be regular gaussian players
 num_players = 10
 num_reactive = 5
@@ -25,9 +28,6 @@ reactive_others_std_range = gaussian_bid_prop_std_range
 # Auction settings
 cutoff_time_range = (0.9, 1.0)
 num_rounds = 100000
-
-# Set to True to print configuration settings
-print_settings = True
 
 ### ====== Run Simulation ====== ###
 
