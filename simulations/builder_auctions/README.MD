@@ -1,39 +1,56 @@
-# Model Explanation and User Guide
+# Auction Simulator: Builder Strategies & User Guide
 
-This repository contains a Python-based auction simulator to model bidding dynamics of bidders.
+This repository contains a Python-based auction simulator modeling strategic bidding behavior under latency constraints. The simulator explores dynamics inspired by Stackelberg games and sealed-bid first-price auction (FPA) mechanisms, tailored toward block-building or builder-style auctions.
 
-The simulator models some of the Stackelberg game aspect combined with candlestick (candle) auctions and sealed-bid first-price auction (FPA) mechanisms.
+## Overview
+
+Players are modeled as agents with different latency characteristics and strategic behaviors. Each player bids for blocks over multiple rounds, and their profits accumulate over time.
 
 ## Player Types
-Implemented in player.py, the simulator currently supports two types of players:
 
-- GaussianRangePlayer
-    - Leaders in the Stackelberg framework.
-        - Each round, they bid immediately based on their private valuation of the block and their predefined latency(speed).
+Defined in `player.py`, the simulator supports two types of players:
 
-        - Models the behavior of “slow” builders who must commit to bids early due to their high latency(low speed).
+- **GaussianRangePlayer**
+  - Acts as a *leader* in the Stackelberg framework.
+  - Bids immediately based on a private bid proportion and latency.
+  - Represents *slower* builders who must commit early due to higher latency (i.e., lower speed).
 
-- ReactiveGaussianRangePlayer
-    - Followers in the Stackelberg framework.
+- **ReactiveGaussianRangePlayer**
+  - Acts as a *follower* in the Stackelberg framework.
+  - Observes available bids (within their latency window) and adjusts their bid accordingly.
+  - Represents *faster* builders with low latency and adaptive bidding capabilities.
 
-        - These players observe bids submitted just before their own bid submission time (if any) and adjust their bid accordingly.
+## Configuration
 
-        - Models the behavior of “fast” builders capable of adaptive bidding strategies because of their low latency(high speed).
+Settings are defined at the top of `main.py`. You can configure:
 
-## Parameter Calibration
+1. **Number of players** and how many are reactive.
+2. **Speed (latency) ranges** for each type of player.
+3. **Bid proportion parameters**, defining how aggressive players are in bidding.
+4. **Cutoff time range** to simulate the time window for bid submissions.
+5. **Simulation length** via `num_rounds`.
 
-### Simulation_1 file
-1. Assign number of players for the auction
-2. Then assign number of players for each strategy
-3. Adjust boundaries for self speed and self aggresivenss of bid proportion for both players
-and guess proportion of reactive player
-4. Adjust simulation rounds
+## Running the Simulation
 
-Steps 3 & 4 can be adjusted for different bidding characteristics
+Run `main.py` to:
+- Generate players with randomized characteristics (within the specified parameter ranges).
+- Simulate an auction over many rounds.
+- Display detailed outputs including:
+  - Each player's strategy, speed, and bidding behavior.
+  - Final profits/winnings.
+  - Sorted summary of all players ranked by their success.
 
-Finally, run the code
+### Optional: Display Settings
 
-### Player file
-In the the ReactiveGaussianRangePlayer, you can change the adjusted_bid of how they would react upon seeing other bids. For now, this is arbritary
-and can be subject to change. 
+You can enable `print_settings = True` at the top of `main.py` to print all current configuration values before the simulation runs. This is useful for debugging or for verifying experimental setups.
 
+## Customizing Strategy Logic
+
+In `player.py`, the `ReactiveGaussianRangePlayer` class contains an `adjusted_bid` method. You can modify this logic to change how reactive players respond to observed bids. This is currently a heuristic and can be improved to simulate more realistic or competitive behaviors.
+
+## File Structure
+
+- `main.py`: Main simulation script. Set configurations and run experiments here.
+- `auction.py`: Contains the `Auction` class which manages the auction rounds.
+- `player.py`: Defines player strategies and bid logic.
+- `player_setup.py`: Contains the `generate_players` function to create randomized player instances.

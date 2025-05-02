@@ -1,102 +1,91 @@
-import random
-from formatting import FormatPrinter
-import player
+from auction import Auction
+from player_setup import generate_players
+from player import *
 
-class Auction:
-    def __init__(self, players):
-        self.players = players
-        assert len(players) >= 2 # support more players later
+### ====== Configuration ====== ###
 
-    def conduct_round(self):
-        cutoff_time = random.uniform(0.9, 1.0)
+# Assign number of players and how many are reactive gaussian players, the rest will be regular gaussian players
+num_players = 10
+num_reactive = 5
 
-        # Step 1: All players generate valuation and submit time
-        submit_times = []
-        for p in self.players:
-            val, submit_by = p.generate_round_info()
-            submit_times.append(submit_by)
+## Gaussian player settings
+gaussian_speed_min_range = (0.0, 0.2)
+gaussian_speed_max_range = (0.2, 0.6)
+gaussian_bid_prop_mean_range = (0.75, 0.95)
+gaussian_bid_prop_std_range = (0.3, 0.5)
 
-        # Step 2: Determine strategies for each player
-        strategies = {}
-        for i, p in enumerate(self.players):
-            if isinstance(p, player.ReactiveGaussianRangePlayer):
-                # Provide submit_by of all other players
-                others_submit_by = [submit_times[j] for j in range(len(self.players)) if j != i]
-                strategy = p.determine_strategy(others_submit_by, cutoff_time)
-            else:
-                strategy = p.determine_strategy()
-            strategies[p.player_id] = strategy
+## Reactive Gaussian player settings
+reactive_speed_min_range = (0.3, 0.5)
+reactive_speed_max_range = (0.6, 0.9)
+reactive_bid_prop_mean_range = (0.85, 0.95)
+reactive_bid_prop_std_range = (0.2, 0.4)
+reactive_others_mean_range = gaussian_bid_prop_mean_range
+reactive_others_std_range = gaussian_bid_prop_std_range
 
-        # Step 3: Filter bids submitted before cutoff and sort by time
-        bid_order = sorted(
-            [(p_id, strategy[2]) for p_id, strategy in strategies.items() if strategy[2] < cutoff_time],
-            key=lambda x: x[1]
-        )
+# Auction settings
+cutoff_time_range = (0.9, 1.0)
+num_rounds = 100000
 
-        winning_bid = None
-        winning_value = None
+# Set to True to print configuration settings
+print_settings = True
 
-        if len(bid_order) == 0:
-            winner = None
-        elif len(bid_order) == 1:
-            winner = bid_order[0][0]
-        else:
-            # Select highest bid among all
-            highest_bid = -1
-            winner = None
-            for pid, _ in bid_order:
-                bid_amount = self.players[pid].val * strategies[pid][1]
-                if bid_amount > highest_bid:
-                    highest_bid = bid_amount
-                    winner = pid
+### ====== Run Simulation ====== ###
 
-        if winner is not None:
-            winning_bid = self.players[winner].val * strategies[winner][1]
-            winning_value = self.players[winner].val - winning_bid
+# Generate players
+players = generate_players(
+    num_players,
+    num_reactive,
+    gaussian_speed_min_range,
+    gaussian_speed_max_range,
+    gaussian_bid_prop_mean_range,
+    gaussian_bid_prop_std_range,
+    reactive_speed_min_range,
+    reactive_speed_max_range,
+    reactive_bid_prop_mean_range,
+    reactive_bid_prop_std_range,
+    reactive_others_mean_range,
+    reactive_others_std_range
+)
 
-        round_data = {
-            "valuations": [p.val for p in self.players],
-            "strategies": strategies,
-            "cutoff_time": cutoff_time,
-            "bid_order": bid_order,
-            "winner": (winner, winning_bid, winning_value) if winner is not None else None
-        }
-        return round_data
+# Run auction
+auction = Auction(players, cutoff_time_range)
+round_results, winnings = auction.run_simulation(num_rounds)
 
+### ====== Display Sorted Results ====== ###
 
-    def run_simulation(self, num_rounds):
-        round_results = []
-        winnings = [0.0] * len(self.players)
-        for _ in range(num_rounds):
-            round_data = self.conduct_round()
-            if round_data["winner"] is not None and round_data["winner"][0] is not None:
-                w = round_data["winner"][0]
-                winnings[w] += round_data["winner"][2]
-            round_results.append(round_data)
-        return (round_results, winnings)
+# Sort the players by their winnings and include necessary details
+sorted_players = sorted(
+    [(p_id, winnings[p_id], 'Gaussian         ' if isinstance(player, GaussianRangePlayer) else 'Gaussian Reactive',
+      player.speed, player.range[0], player.range[1], 
+      player.others_range[0] if isinstance(player, ReactiveGaussianRangePlayer) else None,
+      player.others_range[1] if isinstance(player, ReactiveGaussianRangePlayer) else None) 
+     for p_id, player in enumerate(players)],
+    key=lambda x: x[1], reverse=True
+)
 
-    def get_results(self):
-        return self.round_results
+# Print sorted results
+print("\nPlayers Sorted by Winnings:")
+for p_id, win, strat, speed, bid_mean, bid_std, others_mean, others_std in sorted_players:
+    print(f"  Player {p_id} | {strat} | Winnings: {win:.4f} | Speed: ({speed[0]:.3f}, {speed[1]:.3f}) | "
+          f"Mean: {bid_mean:.3f} | Stddev: {bid_std:.3f}", end="")
+    if others_mean is not None:
+        print(f" | Others' Mean: {others_mean:.3f} | Others' Stddev: {others_std:.3f}")
+    else:
+        print()
 
-
-
-
-
-# Example usage
-def test(num_rounds):
-    speeds = [1.0, 1.0] # same for now...
-    players = [player(player_id=i, speed=speeds[i]) for i in range(2)]
-    auction = Auction(players)
-    round_results, winnings = auction.run_simulation(num_rounds)
-
-    for i, result in enumerate(round_results, start=1):
-        print(f"Round {i}")
-        FormatPrinter({float: "%.4f"}).pprint(result)
-        # from [python - pprint with custom float formats - Stack Overflow](https://stackoverflow.com/questions/44356693/pprint-with-custom-float-formats)
-        print("\n")
-    
-    print(f"Winnings: {winnings}")
-
-
-
-
+# Print settings (optional)
+if print_settings:
+    print("=== Simulation Settings ===")
+    print(f"Number of Players: {num_players}")
+    print(f"Number of Reactive Players: {num_reactive}")
+    print(f"Gaussian Speed Range: min {gaussian_speed_min_range}, max {gaussian_speed_max_range}")
+    print(f"Gaussian Bid Prop Mean Range: {gaussian_bid_prop_mean_range}")
+    print(f"Gaussian Bid Prop Std Range: {gaussian_bid_prop_std_range}")
+    print(f"Reactive Speed Range: min {reactive_speed_min_range}, max {reactive_speed_max_range}")
+    print(f"Reactive Bid Prop Mean Range: {reactive_bid_prop_mean_range}")
+    print(f"Reactive Bid Prop Std Range: {reactive_bid_prop_std_range}")
+    print(f"Reactive Knowledge of Others (Mean Range): {reactive_others_mean_range}")
+    print(f"Reactive Knowledge of Others (Std Range): {reactive_others_std_range}")
+    print(f"Cutoff Time Range: {cutoff_time_range}")
+    print(f"Simulation Rounds: {num_rounds}")
+    print("===========================\n")
