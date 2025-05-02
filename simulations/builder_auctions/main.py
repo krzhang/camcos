@@ -1,66 +1,59 @@
 import random
 from formatting import FormatPrinter
 import player
-import numpy as np
 
 class Auction:
     def __init__(self, players):
         self.players = players
-        assert len(players) == 2 # support more players later
+        assert len(players) >= 2 # support more players later
 
     def conduct_round(self):
-        # round_infos = {player.player_id: player.generate_round_info() for player in self.players}
-        # pairs of (val, submit_by)
-        # strategies = {player.player_id: player.determine_strategy() for player in self.players}
+        cutoff_time = random.uniform(0.9, 1.0)
 
+        # Step 1: All players generate valuation and submit time
+        submit_times = []
+        for p in self.players:
+            val, submit_by = p.generate_round_info()
+            submit_times.append(submit_by)
 
-        cutoff_time = random.uniform(0.7, 0.9) # when this simulator actually stops taking bids
+        # Step 2: Determine strategies for each player
+        strategies = {}
+        for i, p in enumerate(self.players):
+            if isinstance(p, player.ReactiveGaussianRangePlayer):
+                # Provide submit_by of all other players
+                others_submit_by = [submit_times[j] for j in range(len(self.players)) if j != i]
+                strategy = p.determine_strategy(others_submit_by, cutoff_time)
+            else:
+                strategy = p.determine_strategy()
+            strategies[p.player_id] = strategy
 
-        p1 = self.players[0] # pick slow bidder
-        p2 = self.players[1] # pick fast bidder
-
-        # p1 and p2 both generate their valuation and submit time
-        p1_val, p1_submit_by = p1.generate_round_info()
-        p2_val, p2_submit_by = p2.generate_round_info()
-        
-        # dictionary to store the bidding strategies for each player
-        strategies = {
-            p1.player_id: p1.determine_strategy(),
-            p2.player_id: p2.determine_strategy(p1_submit_by, cutoff_time)
-        }
-
-        bid_order = sorted([(i, strategies[i][2]) for i in range(len(self.players))
-                            if strategies[i][2] < cutoff_time],
-                           key = lambda x: x[1])
-        # (bidder, time) for time that's eligible.
+        # Step 3: Filter bids submitted before cutoff and sort by time
+        bid_order = sorted(
+            [(p_id, strategy[2]) for p_id, strategy in strategies.items() if strategy[2] < cutoff_time],
+            key=lambda x: x[1]
+        )
 
         winning_bid = None
         winning_value = None
 
         if len(bid_order) == 0:
             winner = None
-            winning_bid = None
+        elif len(bid_order) == 1:
+            winner = bid_order[0][0]
         else:
-            if len(bid_order) == 1:
-                winner = bid_order[0][0]
-                winning_bid = strategies[winner][1] 
-            else:
-                assert len(bid_order) == 2
-                first_player = bid_order[0][0]
-                second_player = bid_order[1][0]
-                first_bid_amount = self.players[first_player].val * strategies[first_player][1]
-                second_bid_amount = self.players[second_player].val * strategies[second_player][1]
-                if second_bid_amount > first_bid_amount:
-                    winner = second_player
-                else:
-                    winner = first_player
+            # Select highest bid among all
+            highest_bid = -1
+            winner = None
+            for pid, _ in bid_order:
+                bid_amount = self.players[pid].val * strategies[pid][1]
+                if bid_amount > highest_bid:
+                    highest_bid = bid_amount
+                    winner = pid
 
+        if winner is not None:
             winning_bid = self.players[winner].val * strategies[winner][1]
             winning_value = self.players[winner].val - winning_bid
 
-
-        
-        # Collect round data
         round_data = {
             "valuations": [p.val for p in self.players],
             "strategies": strategies,
@@ -70,9 +63,10 @@ class Auction:
         }
         return round_data
 
+
     def run_simulation(self, num_rounds):
         round_results = []
-        winnings = [0.0, 0.0]
+        winnings = [0.0] * len(self.players)
         for _ in range(num_rounds):
             round_data = self.conduct_round()
             if round_data["winner"] is not None and round_data["winner"][0] is not None:
