@@ -19,7 +19,7 @@ class Player:
         round.
         Replace with actual logic.
         """
-        val = random.uniform(0.7, 0.9)  # Example: Random valuation between 0 and 100
+        val = random.uniform(0.0, 1.0)  # Example: Random valuation between 0 and 100
         submit_by = random.uniform(self.speed[0], self.speed[1]) # the time the speed forces you to submit by
         self.val = val
         self.submit_by = submit_by
@@ -82,38 +82,40 @@ class ReactiveGaussianRangePlayer(Player):
     A player that reacts based on whether it sees p1's bid.
     """
 
-    def __init__(self, player_id, speed, range, p1_range):
+    def __init__(self, player_id, speed, range, others_range):
         self.player_id = player_id
         self.speed = speed
         self.range = range
-        self.p1_range = p1_range
+        self.others_range = others_range
 
-    def determine_strategy(self, p1_submit_by, cutoff_time):
+    def determine_strategy(self, others_submit_by, cutoff_time):
         """
-        If p2 sees p1's bid (based on submit_by timing),
-        p2 adjusts its own bid accordingly.
+        Reacts based on whether the player sees earlier bids from any other players.
         """
-        bid_prop_p2 = min(random.gauss(self.range[0], self.range[1]), 1)
-        original_bid_p2 = bid_prop_p2 * self.val
+        bid_prop_self = min(random.gauss(self.range[0], self.range[1]), 1)
+        original_bid = bid_prop_self * self.val
 
-        if self.submit_by > p1_submit_by and p1_submit_by < cutoff_time:
-            # p2 sees p1's bid and reacts
-            guessed_p1_prop = min(random.gauss(self.p1_range[0], self.p1_range[1]), 1)
-            guessed_p1_bid = guessed_p1_prop * self.val  # p2 uses its own valuation to guess
+        guessed_bids = []
 
-            # if p2 guesses p1 will take win the block, and is still profitable, change p2 bid to overtake
-            if self.val > guessed_p1_bid > original_bid_p2:
-                final_bid = guessed_p1_bid
-            # if p2 guesses p1 will overly overbid, stay reserved
-            elif guessed_p1_bid > self.val:
-                final_bid = 0.8 * original_bid_p2
-            # if p2 guesses p1 will underbid, soften p2 bid to gain more profit (is in assumption they win)
+        for other_submit_by in others_submit_by:
+            if other_submit_by < self.submit_by < cutoff_time:
+                guessed_other_prop = min(max(0, random.gauss(self.others_range[0], self.others_range[1])), 1)
+                guessed_other_bid = guessed_other_prop * self.val
+                guessed_bids.append(guessed_other_bid)
             else:
-                final_bid = (guessed_p1_bid + original_bid_p2)/2
-            
-            return (WAIT_AND_UNDERBID_IF_ABLE, final_bid, self.submit_by)
+                guessed_bids.append(0)  # Didn't see this player's bid
 
+        max_guess = max(guessed_bids)
+
+        if original_bid < max_guess < self.val:
+            adjusted_bid = max_guess
+        elif max_guess < original_bid:
+            adjusted_bid = (max_guess + original_bid) / 2
         else:
-            # p2 doesn't see p1 then bid normal
-            return (WAIT_AND_UNDERBID_IF_ABLE, original_bid_p2, self.submit_by)
-        
+            adjusted_bid = original_bid
+
+        return (WAIT_AND_UNDERBID_IF_ABLE, adjusted_bid, self.submit_by)
+
+            
+
+            
