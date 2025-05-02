@@ -3,27 +3,32 @@ from main import Auction
 from formatting import FormatPrinter
 import random
 
+# Assign number of players in auction
 num_players = 10
+
+# Assign number of gaussian and reactive gaussian players
 num_gaussian = 5
 num_reactive = 5
 
+# Initiliaze players array
 players = []
 
-# Assign unique player IDs from 0 to 9
+# Assign unique player IDs from 0 to 9 to an array
 player_ids = list(range(num_players))
+# Shuffle players to randomize player's strategy
 random.shuffle(player_ids)
 
 # First assign Gaussian players
 for _ in range(num_gaussian):
     p_id = player_ids.pop()
 
-    # Random speed
+    # Own speed
     speed_min = random.uniform(0.0, 0.2)  # Example lower bounds
     speed_max = speed_min + random.uniform(0.2, 0.4)  # Always ensure valid range
 
-    # Random bid_prop mean and variance
-    mean = random.uniform(0.75, 0.95)  # Conservative to aggressive
-    stddev = random.uniform(0.3, 0.5)  # Player variability
+    # Own bid_prop mean and variance
+    mean = random.uniform(0.75, 0.95)  # bid proportion aggressiveness
+    stddev = random.uniform(0.3, 0.5)  # Player variability on bid proportion
 
     p = player.GaussianRangePlayer(p_id, (speed_min, speed_max), (mean, stddev))
     players.append(p)
@@ -35,7 +40,7 @@ for _ in range(num_gaussian):
 for _ in range(num_reactive):
     p_id = player_ids.pop()
 
-    # Random speed
+    # Own speed
     speed_min = random.uniform(0.3, 0.5)
     speed_max = speed_min + random.uniform(0.3, 0.4)
 
