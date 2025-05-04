@@ -115,7 +115,3 @@ class ReactiveGaussianRangePlayer(Player):
             adjusted_bid = original_bid
 
         return (WAIT_AND_UNDERBID_IF_ABLE, adjusted_bid, self.submit_by)
-
-            
-
-            

@@ -77,6 +77,3 @@ class Auction:
 
     def get_results(self):
         return self.round_results
-
-
-

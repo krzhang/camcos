@@ -72,7 +72,7 @@ sorted_players = sorted(
 )
 
 # Print sorted results
-print("\nPlayers Sorted by Winnings:")
+print("\n==== Players Sorted by Winnings ====")
 for p_id, win_amt, win_count, strat, speed, bid_mean, bid_std, others_mean, others_std in sorted_players:
     print(f"  Player {p_id} | {strat} | Wins: {win_count:5d} | Winnings: {win_amt:.4f} | "
           f"Speed: ({speed[0]:.3f}, {speed[1]:.3f}) | "
@@ -82,9 +82,10 @@ for p_id, win_amt, win_count, strat, speed, bid_mean, bid_std, others_mean, othe
     else:
         print()
 
-# Print settings (optional)
+### ====== Display Settings (Optional) ====== ###
+
 if print_settings:
-    print("=== Simulation Settings ===")
+    print("\n======= Simulation Settings =======")
     print(f"Number of Players: {num_players}")
     print(f"Number of Reactive Players: {num_reactive}")
     print(f"Gaussian Speed Range: min {gaussian_speed_min_range}, max {gaussian_speed_max_range}")
@@ -97,4 +98,4 @@ if print_settings:
     print(f"Reactive Knowledge of Others (Std Range): {reactive_others_std_range}")
     print(f"Cutoff Time Range: {cutoff_time_range}")
     print(f"Simulation Rounds: {num_rounds}")
-    print("===========================\n")
+    print("===================================\n")
