@@ -6,6 +6,9 @@ from player import *
 
 ## Set to True to print configuration settings
 print_settings = True
+## Set to True to print first n rounds
+print_first_n_rounds = True
+n_rounds_to_print = 5
 
 # Assign number of players and how many are reactive gaussian players, the rest will be regular gaussian players
 num_players = 10
@@ -51,6 +54,35 @@ players = generate_players(
 auction = Auction(players, cutoff_time_range)
 round_results, winnings = auction.run_simulation(num_rounds)
 
+### ====== Display Round Info (Optional) ====== ###
+
+if print_first_n_rounds:
+    print(f"\n===== First {n_rounds_to_print} Round(s) Details ======")
+    for round_index, round_data in enumerate(round_results[:n_rounds_to_print]):
+        cutoff_time = round_data["cutoff_time"]
+        print(f"\n--- Round {round_index + 1} --- Cutoff Time: {cutoff_time:.4f}")
+        winner_info = round_data["winner"]
+        if winner_info:
+            print(f"Winner: P{winner_info[0]} | Bid: {winner_info[1]:.4f} | Profit: {winner_info[2]:.4f}")
+        else:
+            print("No winner this round.")
+        for pid in sorted(range(len(players))):
+            player = players[pid]
+            val = round_data["valuations"][pid]
+            strat_code, bid_prop, submit_by = round_data["strategies"][pid]
+            final_bid = val * bid_prop
+            in_time = submit_by < cutoff_time
+            status = "" if in_time else "LATE"
+            
+            # Determine player type
+            if isinstance(player, GaussianRangePlayer):
+                player_type = "Gaussian"
+            elif isinstance(player, ReactiveGaussianRangePlayer):
+                player_type = "Reactive"
+            else:
+                player_type = "Unknown"
+            print(f"  P{pid} | {player_type:<8} | Val: {val:.4f} | Bid: {final_bid:.4f} | Submit Time: {submit_by:.4f}{status}")
+
 # Count number of wins per player
 win_counts = [0] * len(players)
 for round_data in round_results:
@@ -74,11 +106,11 @@ sorted_players = sorted(
 # Print sorted results
 print("\n==== Players Sorted by Winnings ====")
 for p_id, win_amt, win_count, strat, speed, bid_mean, bid_std, others_mean, others_std in sorted_players:
-    print(f"  Player {p_id} | {strat} | Wins: {win_count:5d} | Winnings: {win_amt:.4f} | "
-          f"Speed: ({speed[0]:.3f}, {speed[1]:.3f}) | "
-          f"Mean: {bid_mean:.3f} | Stddev: {bid_std:.3f}", end="")
+    print(f"P{p_id} {strat} | Wins: {win_count:5d} | Profit: {win_amt:.2f} | "
+          f"Spd: ({speed[0]:.3f}, {speed[1]:.3f}) | "
+          f"Mean: {bid_mean:.3f} | StD: {bid_std:.3f}", end="")
     if others_mean is not None:
-        print(f" | Others' Mean: {others_mean:.3f} | Others' Stddev: {others_std:.3f}")
+        print(f" | Pub. Mean: {others_mean:.3f} | Pub. StD: {others_std:.3f}")
     else:
         print()
 
@@ -90,12 +122,12 @@ if print_settings:
     print(f"Number of Reactive Players: {num_reactive}")
     print(f"Gaussian Speed Range: min {gaussian_speed_min_range}, max {gaussian_speed_max_range}")
     print(f"Gaussian Bid Prop Mean Range: {gaussian_bid_prop_mean_range}")
-    print(f"Gaussian Bid Prop Std Range: {gaussian_bid_prop_std_range}")
+    print(f"Gaussian Bid Prop StD Range: {gaussian_bid_prop_std_range}")
     print(f"Reactive Speed Range: min {reactive_speed_min_range}, max {reactive_speed_max_range}")
     print(f"Reactive Bid Prop Mean Range: {reactive_bid_prop_mean_range}")
-    print(f"Reactive Bid Prop Std Range: {reactive_bid_prop_std_range}")
-    print(f"Reactive Knowledge of Others (Mean Range): {reactive_others_mean_range}")
-    print(f"Reactive Knowledge of Others (Std Range): {reactive_others_std_range}")
+    print(f"Reactive Bid Prop StD Range: {reactive_bid_prop_std_range}")
+    print(f"Reactive Knowledge of Public (Mean Range): {reactive_others_mean_range}")
+    print(f"Reactive Knowledge of Public (StD Range): {reactive_others_std_range}")
     print(f"Cutoff Time Range: {cutoff_time_range}")
     print(f"Simulation Rounds: {num_rounds}")
     print("===================================\n")
