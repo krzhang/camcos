@@ -1,6 +1,6 @@
 import random
 
-EPSILON = 0.000001
+EPSILON = 0.001
 
 WAIT_AND_UNDERBID_IF_ABLE = 0 # right now this is the only "strategy code" but this can change
 
@@ -74,7 +74,7 @@ class GaussianRangePlayer(Player):
         scale by something in the range... of course, the player will not overbid 
         the valuation.
         """
-        bid_prop = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1)
+        bid_prop = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1-EPSILON)
         return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop * self.val, self.submit_by)
     
 class ReactiveGaussianRangePlayer(Player):
@@ -92,14 +92,14 @@ class ReactiveGaussianRangePlayer(Player):
         """
         Reacts based on whether the player sees earlier bids from any other players.
         """
-        bid_prop_self = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1)
+        bid_prop_self = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1-EPSILON)
         original_bid = bid_prop_self * self.val
 
         guessed_bids = []
 
         for other_submit_by in others_submit_by:
             if other_submit_by < self.submit_by < cutoff_time:
-                guessed_other_prop = min(max(0.5, random.gauss(self.others_range[0], self.others_range[1])), 1)
+                guessed_other_prop = min(max(0.5, random.gauss(self.others_range[0], self.others_range[1])), 1-EPSILON)
                 guessed_other_bid = guessed_other_prop * self.val
                 guessed_bids.append(guessed_other_bid)
             else:
@@ -109,8 +109,8 @@ class ReactiveGaussianRangePlayer(Player):
 
         if original_bid < max_guess < self.val:
             adjusted_bid = max_guess
-        # elif max_guess < original_bid:                    # choice to dampen bid
-        #     adjusted_bid = (max_guess + original_bid) / 2
+        elif max_guess < original_bid:                    # choice to hide this; dampen bid case
+            adjusted_bid = (max_guess + original_bid) / 2
         else:
             adjusted_bid = original_bid
 
