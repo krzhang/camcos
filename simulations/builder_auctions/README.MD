@@ -30,6 +30,10 @@ Settings are defined at the top of `main.py`. You can configure:
 4. **Cutoff time range** to simulate the time window for bid submissions.
 5. **Simulation length** via `num_rounds`.
 
+Another setting that can be configured in 'player.py' is the "USE_UNIFORM_SAMPLING = True" at the top of the code.
+When given True, all the distributions for bids and guesses will be sampled from uniform. When given False, sampled from gaussian distribution.
+
+
 ## Running the Simulation
 
 Run `main.py` to:
