@@ -4,6 +4,8 @@ EPSILON = 0.001
 
 WAIT_AND_UNDERBID_IF_ABLE = 0 # right now this is the only "strategy code" but this can change
 
+USE_UNIFORM_SAMPLING = True
+
 class Player:
     # should make more classes, but for now
   
@@ -74,7 +76,13 @@ class GaussianRangePlayer(Player):
         scale by something in the range... of course, the player will not overbid 
         the valuation.
         """
-        bid_prop = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1-EPSILON)
+        if USE_UNIFORM_SAMPLING:
+            lower = self.range[0] - self.range[1]
+            upper = self.range[0] + self.range[1]
+            bid_prop = min(max(0, random.uniform(lower, upper)), 1-EPSILON)
+        else:
+            bid_prop = min(max(0, random.gauss(self.range[0], self.range[1])), 1-EPSILON)
+
         return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop * self.val, self.submit_by)
     
 class ReactiveGaussianRangePlayer(Player):
@@ -92,14 +100,26 @@ class ReactiveGaussianRangePlayer(Player):
         """
         Reacts based on whether the player sees earlier bids from any other players.
         """
-        bid_prop_self = min(max(0.5,random.gauss(self.range[0], self.range[1])), 1-EPSILON)
+        if USE_UNIFORM_SAMPLING:
+            low = self.range[0] - self.range[1]
+            high = self.range[0] + self.range[1]
+            bid_prop_self = min(max(0, random.uniform(low, high)), 1-EPSILON)
+        else:
+            bid_prop_self = min(max(0, random.gauss(self.range[0], self.range[1])), 1-EPSILON)
+
         original_bid = bid_prop_self * self.val
 
         guessed_bids = []
 
         for other_submit_by in others_submit_by:
             if other_submit_by < self.submit_by < cutoff_time:
-                guessed_other_prop = min(max(0.5, random.gauss(self.others_range[0], self.others_range[1])), 1-EPSILON)
+                if USE_UNIFORM_SAMPLING:
+                    low = self.others_range[0] - self.others_range[1]
+                    high = self.others_range[0] + self.others_range[1]
+                    guessed_other_prop = min(max(0, random.uniform(low, high)), 1-EPSILON)
+                else:
+                    guessed_other_prop = min(max(0, random.gauss(self.others_range[0], self.others_range[1])), 1-EPSILON)
+
                 guessed_other_bid = guessed_other_prop * self.val
                 guessed_bids.append(guessed_other_bid)
             else:

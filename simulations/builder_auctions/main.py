@@ -23,7 +23,7 @@ reactive_others_mean_range, reactive_others_std_range = gaussian_bid_prop_mean_r
 
 # Auction settings
 cutoff_time_range = (0.9, 1.0)
-num_rounds = 100000
+num_rounds = 10000
 
 ### ====== Run Simulation ====== ###
 
