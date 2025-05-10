@@ -15,10 +15,10 @@ num_players = 10
 num_reactive = 5
 
 gaussian_speed_min_range, gaussian_speed_max_range = (0.0, 0.2), (0.2, 0.6)
-gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range = (0.75, 0.95), (0.3, 0.5)
+gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range = (0.65, 0.90), (0.1, 0.2)
 
 reactive_speed_min_range, reactive_speed_max_range = (0.3, 0.5), (0.6, 0.9)
-reactive_bid_prop_mean_range, reactive_bid_prop_std_range = (0.85, 0.95), (0.2, 0.4)
+reactive_bid_prop_mean_range, reactive_bid_prop_std_range = (0.80, 0.90), (0.1, 0.2)
 reactive_others_mean_range, reactive_others_std_range = gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range
 
 # Auction settings
