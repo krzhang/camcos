@@ -1,1 +1,3 @@
 simulations/builder_auctions/*.csv
+*.pyc
+__pycache__/
