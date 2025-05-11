@@ -10,12 +10,17 @@ print_settings = True
 print_first_n_rounds = True
 n_rounds_to_print = 5
 
-# Assign number of players and how many are reactive gaussian players, the rest will be regular gaussian players
+# Assign number of players and how many are reactive gaussian players, the rest will be regular gaussian players;
+# There is additional support to include different types of regular gaussian players if selected. Otherwise, can set Gaussian2 to 0 to ignore
 num_players = 10
 num_reactive = 5
+num_gaussian2 = 1
 
 gaussian_speed_min_range, gaussian_speed_max_range = (0.0, 0.2), (0.2, 0.6)
 gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range = (0.65, 0.90), (0.1, 0.2)
+
+gaussian2_speed_min_range, gaussian2_speed_max_range = (0.1, 0.3), (0.3, 0.7)
+gaussian2_bid_prop_mean_range, gaussian2_bid_prop_std_range = (0.45, 0.60), (0.1, 0.2)
 
 reactive_speed_min_range, reactive_speed_max_range = (0.3, 0.5), (0.6, 0.9)
 reactive_bid_prop_mean_range, reactive_bid_prop_std_range = (0.80, 0.90), (0.1, 0.2)
@@ -31,10 +36,15 @@ num_rounds = 10000
 players = generate_players(
     num_players,
     num_reactive,
+    num_gaussian2,
     gaussian_speed_min_range,
     gaussian_speed_max_range,
     gaussian_bid_prop_mean_range,
     gaussian_bid_prop_std_range,
+    gaussian2_speed_min_range,
+    gaussian2_speed_max_range,
+    gaussian2_bid_prop_mean_range,
+    gaussian2_bid_prop_std_range,
     reactive_speed_min_range,
     reactive_speed_max_range,
     reactive_bid_prop_mean_range,
@@ -59,7 +69,12 @@ if print_first_n_rounds:
         if winner_info:
             winner_id = winner_info[0]
             winner_player = next(p for p in players if p.player_id == winner_id)
-            winner_type = "Reactive" if isinstance(winner_player, ReactiveGaussianRangePlayer) else "Gaussian"
+            if isinstance(winner_player, ReactiveGaussianRangePlayer):
+                winner_type = "Reactive"
+            elif isinstance(winner_player, GaussianRangePlayer2):
+                winner_type = "Gaussian2"
+            else:
+                winner_type = "Gaussian"
             print(f"Winner: P{winner_id} ({winner_type}) | Bid: {winner_info[1]:.4f} | Profit: {winner_info[2]:.4f}")
         else:
             print("No winner this round.")
@@ -71,7 +86,12 @@ if print_first_n_rounds:
             val = round_data["valuations"][pid_to_index[pid]]
             _, bid, submit_by = round_data["strategies"][pid]
             status = "ON TIME" if submit_by < cutoff_time else "LATE"
-            player_type = "Reactive" if isinstance(p, ReactiveGaussianRangePlayer) else "Gaussian"
+            if isinstance(p, ReactiveGaussianRangePlayer):
+                player_type = "Reactive"
+            elif isinstance(p, GaussianRangePlayer2):
+                player_type = "Gaussian2"
+            else:
+                player_type = "Gaussian"
             print(f"P{pid:<3} {player_type:<9} {val:<10.4f} {bid:<10.4f} {submit_by:<13.4f} {status}")
 
 ### ====== Sorted Results ====== ###
@@ -86,7 +106,9 @@ for r in round_results:
 # Sort the players by their winnings and include necessary details
 sorted_players = sorted(
     [(p.player_id, winnings[pid_to_index[p.player_id]], win_counts[pid_to_index[p.player_id]],
-      'Gaussian' if isinstance(p, GaussianRangePlayer) else 'Reactive',
+      'Gaussian2' if isinstance(p, GaussianRangePlayer2)
+      else 'Reactive' if isinstance(p, ReactiveGaussianRangePlayer)
+      else 'Gaussian',
       p.speed, p.range[0], p.range[1],
       p.others_range[0] if isinstance(p, ReactiveGaussianRangePlayer) else None,
       p.others_range[1] if isinstance(p, ReactiveGaussianRangePlayer) else None)
@@ -109,8 +131,11 @@ if print_settings:
     print("\n======= Simulation Settings =======")
     print(f"Number of Players: {num_players}")
     print(f"Number of Reactive Players: {num_reactive}")
+    print(f"Number of Gaussian2 Players: {num_gaussian2}")
     print(f"Gaussian Speed Range: min {gaussian_speed_min_range}, max {gaussian_speed_max_range}")
     print(f"Gaussian Bid Prop Range: mean {gaussian_bid_prop_mean_range}, std {gaussian_bid_prop_std_range}")
+    print(f"Gaussian2 Speed Range: min {gaussian2_speed_min_range}, max {gaussian2_speed_max_range}")
+    print(f"Gaussian2 Bid Prop Range: mean {gaussian2_bid_prop_mean_range}, std {gaussian2_bid_prop_std_range}")
     print(f"Reactive Speed Range: min {reactive_speed_min_range}, max {reactive_speed_max_range}")
     print(f"Reactive Bid Prop Range: mean {reactive_bid_prop_mean_range}, std {reactive_bid_prop_std_range}")
     print(f"Reactive Knowledge of Public Range: mean {reactive_others_mean_range}, std {reactive_others_std_range}")

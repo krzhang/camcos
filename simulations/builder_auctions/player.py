@@ -85,6 +85,33 @@ class GaussianRangePlayer(Player):
 
         return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop * self.val, self.submit_by)
     
+class GaussianRangePlayer2(Player):
+    """ As requested, a player with some range of scaling of their bids. """
+
+    def __init__(self, player_id, speed, range):
+        """ 
+        example range: [0.75, 0.33] for mean/variance. The range is to be multiplied
+        with the evaluation.
+        """
+        self.player_id = player_id
+        self.speed = speed 
+        self.range = range
+
+    def determine_strategy(self):
+        """
+        Unlike the naive self.val/2, this player will take the valuations and then
+        scale by something in the range... of course, the player will not overbid 
+        the valuation.
+        """
+        if USE_UNIFORM_SAMPLING:
+            lower = self.range[0] - self.range[1]
+            upper = self.range[0] + self.range[1]
+            bid_prop = min(max(0, random.uniform(lower, upper)), 1-EPSILON)
+        else:
+            bid_prop = min(max(0, random.gauss(self.range[0], self.range[1])), 1-EPSILON)
+
+        return (WAIT_AND_UNDERBID_IF_ABLE, bid_prop * self.val, self.submit_by)
+
 class ReactiveGaussianRangePlayer(Player):
     """ 
     A player that reacts based on whether it sees p1's bid.

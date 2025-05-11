@@ -1,13 +1,19 @@
 import random
 import player
 
+
 def generate_players(
     num_players,
     num_reactive,
+    num_gaussian2,
     gaussian_speed_min_range,
     gaussian_speed_max_range,
     gaussian_bid_prop_mean_range,
     gaussian_bid_prop_std_range,
+    gaussian2_speed_min_range,
+    gaussian2_speed_max_range,
+    gaussian2_bid_prop_mean_range,
+    gaussian2_bid_prop_std_range,
     reactive_speed_min_range,
     reactive_speed_max_range,
     reactive_bid_prop_mean_range,
@@ -19,9 +25,9 @@ def generate_players(
     player_ids = list(range(num_players))
     random.shuffle(player_ids)  # Shuffle player IDs to randomize the order
 
-    num_gaussian = num_players - num_reactive
+    num_gaussian1 = num_players - num_reactive - num_gaussian2
 
-    for _ in range(num_gaussian):
+    for _ in range(num_gaussian1):
         p_id = player_ids.pop()
         # Speed range allocation
         speed_min = random.uniform(*gaussian_speed_min_range)   # Lower bounds
@@ -34,6 +40,21 @@ def generate_players(
         stddev = random.uniform(*gaussian_bid_prop_std_range)
 
         p = player.GaussianRangePlayer(p_id, (speed_min, speed_max), (mean, stddev))
+        players.append(p)
+
+    for _ in range(num_gaussian2):
+        p_id = player_ids.pop()
+        # Speed range allocation
+        speed_min = random.uniform(*gaussian2_speed_min_range)   # Lower bounds
+        speed_max = random.uniform(*gaussian2_speed_max_range)   # Max bounds
+        if speed_max < speed_min:
+            speed_min, speed_max = speed_max, speed_min         # Ensure valid range
+
+        # Bid proportion aggressiveness and variability allocation
+        mean = random.uniform(*gaussian2_bid_prop_mean_range)
+        stddev = random.uniform(*gaussian2_bid_prop_std_range)
+
+        p = player.GaussianRangePlayer2(p_id, (speed_min, speed_max), (mean, stddev))
         players.append(p)
 
     for _ in range(num_reactive):
