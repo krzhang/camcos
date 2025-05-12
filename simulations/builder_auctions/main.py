@@ -14,21 +14,21 @@ n_rounds_to_print = 5
 # There is additional support to include different types of regular gaussian players if selected. Otherwise, can set Gaussian2 to 0 to ignore
 num_players = 10
 num_reactive = 5
-num_gaussian2 = 1
+num_gaussian2 = 0
 
 gaussian_speed_min_range, gaussian_speed_max_range = (0.0, 0.2), (0.2, 0.6)
-gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range = (0.65, 0.90), (0.1, 0.2)
+gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range = (0.80, 0.90), (0.2, 0.3)
 
 gaussian2_speed_min_range, gaussian2_speed_max_range = (0.1, 0.3), (0.3, 0.7)
 gaussian2_bid_prop_mean_range, gaussian2_bid_prop_std_range = (0.45, 0.60), (0.1, 0.2)
 
 reactive_speed_min_range, reactive_speed_max_range = (0.3, 0.5), (0.6, 0.9)
-reactive_bid_prop_mean_range, reactive_bid_prop_std_range = (0.80, 0.90), (0.1, 0.2)
+reactive_bid_prop_mean_range, reactive_bid_prop_std_range = (0.85, 0.95), (0.3, 0.4)
 reactive_others_mean_range, reactive_others_std_range = gaussian_bid_prop_mean_range, gaussian_bid_prop_std_range
 
 # Auction settings
 cutoff_time_range = (0.75, 0.85)
-num_rounds = 10000
+num_rounds = 216000
 
 ### ====== Run Simulation ====== ###
 
