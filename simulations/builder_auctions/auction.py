@@ -6,65 +6,80 @@ class Auction:
     def __init__(self, players, cutoff_time_range):
         self.players = players
         self.cutoff_time_range = cutoff_time_range
-        self.player_id_to_player = {p.player_id: p for p in self.players}
 
-    def conduct_round(self):   
-        cutoff_time = random.uniform(self.cutoff_time_range[0], self.cutoff_time_range[1])
+    def generate_round_info(self,debug=False):
+        """
+        Placeholder for generating the information the player gets that might be unique to the
+        round. Specifically, return vals of valuations and submit_bys of submit_by's,
+        where:
 
-        # Step 1: All players generate valuation and submit time
-        submit_times = []
+        [valuation]: the reward for winning the block for the player
+        [submit_by]: the time in [0,1] that the player must submit by (due to the player's own
+        latency for that round; it might still be possible that the player fails to successfully
+        submit that round given future randomness)
+        """
+
+        vals = {}
+        submit_bys = {}
+
         for p in self.players:
-            val, submit_by = p.generate_round_info()
-            submit_times.append(submit_by)
+            pid = p.player_id
+            vals[pid] = random.uniform(0.0, 1.0)  # Example: Random valuation between 0 and 1
+            submit_bys[pid] = random.uniform(p.speed[0], p.speed[1]) # the time the speed forces you to submit by
+            if debug:
+                print("ID: {} Val: {} submit_by: {}".format(pid, vals[pid], submit_bys[pid]))
+
+        return (vals, submit_bys)
+
+    def conduct_round(self, debug=False):   
+        """
+        Logic of conducting a round:
+
+        1) all players, based on some speed, determine when they submit 
+        2) in order of when they submit, we ask them for their actions; they are then allowed
+           to use the information of the bids they have seen but also the knowledge of players
+           they have not seen
+        3) we also roll for a cutoff time (for example, if the cutoff time is 0.9, then all bids
+           after 0.9 are destroyed). We need this for some of the phenomena
+        """
+        cutoff_time = random.uniform(self.cutoff_time_range[0], self.cutoff_time_range[1])
+        if debug:
+            print("Cutoff time: {}".format(cutoff_time))
+        # Step 1: generate valuation and submit time
+    
+        vals, submit_bys = self.generate_round_info(debug=debug)
+
+        submit_order = sorted(
+            [p for p in self.players],
+            key=lambda x: submit_bys[x.player_id])
+        # this gives a list of the players in action order
 
         # Step 2: Determine strategies for each player
-        strategies = {}
-        for i, p in enumerate(self.players):
-            if isinstance(p, player.ReactiveGaussianRangePlayer):
-                # Provide submit_by of all other players
-                others_submit_by = [submit_times[j] for j in range(len(self.players)) if j != i]
-                strategies[p.player_id] = p.determine_strategy(others_submit_by, cutoff_time)
-            else:
-                strategies[p.player_id] = p.determine_strategy()
-
-        # Step 3: Filter bids submitted before cutoff and sort by time
-        bid_order = sorted(
-            [(p_id, strategy[2]) for p_id, strategy in strategies.items() if strategy[2] < cutoff_time],
-            key=lambda x: x[1]
-        )
-
+        actions = []
         winner = None
-        winning_bid = None
+        winning_bid = 0
         winning_value = None
-
-        if len(bid_order) == 0:
-            winner = None
-        elif len(bid_order) == 1:
-            winner = bid_order[0][0]
-        else:
-            # Select highest bid among all
-            highest_bid = -1
-            for pid, _ in bid_order:
-                bid_amount = strategies[pid][1]
-                if bid_amount > highest_bid:
-                    highest_bid = bid_amount
-                    winner = pid
+        for p in submit_order:
+            bid = p.determine_bid(vals[p.player_id], self, actions, debug=debug)
+            actions.append((p, bid))
+            if bid > winning_bid:
+                winner = p
+                winning_bid = bid
 
         if winner is not None:
-            winning_bid = strategies[winner][1]
-            winner_player = self.player_id_to_player[winner]
-            winning_value = winner_player.val - winning_bid
+            winning_value = vals[winner.player_id] - winning_bid
 
         round_data = {
-            "valuations": [p.val for p in self.players],
-            "strategies": strategies,
+            "valuations": vals,
+            "submit_bys": submit_bys,
+            "actions": actions,
             "cutoff_time": cutoff_time,
-            "bid_order": bid_order,
-            "winner": (winner, winning_bid, winning_value) if winner is not None else None
+            "submit_order": submit_order,
+            "winner": (winner.player_id, winning_bid, winning_value) if winner is not None else None
         }
         return round_data
 
-    def run_simulation(self, num_rounds):
+    def run_simulation(self, num_rounds, debug=False):
         results = []
         winnings = [0.0] * len(self.players)
 
@@ -72,11 +87,13 @@ class Auction:
         pid_to_index = {p.player_id: i for i, p in enumerate(self.players)}
 
         for _ in range(num_rounds):
-            round_data = self.conduct_round()
+            round_data = self.conduct_round(debug=debug)
             winner = round_data["winner"]
             if winner:
                 pid, _, profit = winner
                 winnings[pid_to_index[pid]] += profit
+                if debug:
+                    print ("{} won {}".format(pid, profit))
             results.append(round_data)
 
         return results, winnings
