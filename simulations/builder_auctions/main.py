@@ -11,7 +11,7 @@ n_rounds_to_print = 5
 num_players = 10
 num_reactive = 5
 
-sealed_bids = True
+sealed_bids = False
 
 # Player parameter ranges
 speed_range_reactive = (0.2, 0.3), (0.6, 0.7)
@@ -32,11 +32,14 @@ for i in range(num_players - num_reactive):
         random.uniform(*speed_range_nonreactive[0]),
         random.uniform(*speed_range_nonreactive[1])
     )
-    bid_range = (
-        random.uniform(bid_range_nonreactive[0] - bid_range_nonreactive[1],
-                       bid_range_nonreactive[0] + bid_range_nonreactive[1]),
-        bid_range_nonreactive[1]
-    )
+
+    # Sample bid mean and std from the non-reactive bid range
+    bid_mean = random.uniform(bid_range_nonreactive[0] - bid_range_nonreactive[1], bid_range_nonreactive[0] + bid_range_nonreactive[1])
+    bid_std = bid_range_nonreactive[1]
+    bid_mean = min(bid_mean, 1)
+
+    bid_range = (bid_mean, bid_std)
+
     players.append(RangePlayer(i, speed, bid_range, reactive=False))
 
 # Reactive players
@@ -45,11 +48,13 @@ for i in range(num_players - num_reactive, num_players):
         random.uniform(*speed_range_reactive[0]),
         random.uniform(*speed_range_reactive[1])
     )
-    bid_range = (
-        random.uniform(bid_range_reactive[0] - bid_range_reactive[1],
-                       bid_range_reactive[0] + bid_range_reactive[1]),
-        bid_range_reactive[1]
-    )
+    # Sample bid mean and std from the reactive bid range
+    bid_mean = random.uniform(bid_range_reactive[0] - bid_range_reactive[1], bid_range_reactive[0] + bid_range_reactive[1])
+    bid_std = bid_range_reactive[1]
+    bid_mean = min(bid_mean, 1)
+
+    bid_range = (bid_mean, bid_std)
+
     players.append(RangePlayer(i, speed, bid_range, reactive=True))
 
 pid_to_index = {p.player_id: i for i, p in enumerate(players)}
