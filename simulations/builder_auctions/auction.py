@@ -48,6 +48,7 @@ class Auction:
         # Step 1: generate valuation and submit time
     
         vals, submit_bys = self.generate_round_info(debug=debug)
+        # real_val = random.uniform(0.7, 1.0)  # True MEV realized when block is built
 
         submit_order = sorted(
             [p for p in self.players],
@@ -67,6 +68,7 @@ class Auction:
                 winning_bid = bid
 
         if winner is not None:
+            # winning_value = real_val - winning_bid
             winning_value = vals[winner.player_id] - winning_bid
 
         round_data = {
@@ -75,6 +77,8 @@ class Auction:
             "actions": actions,
             "cutoff_time": cutoff_time,
             "submit_order": submit_order,
+            "winning_bid": winning_bid,
+            # "real_val": real_val,
             "winner": (winner.player_id, winning_bid, winning_value) if winner is not None else None
         }
         return round_data
