@@ -1,9 +1,6 @@
 import random
 
 EPSILON = 0.00001
-
-sealing = True
-
 class Player:
     # should make more classes, but for now
   
@@ -80,7 +77,7 @@ class RangePlayer(Player):
         #    seen (if it's valuable to us)
         # 2) for players we have not seen, we should sample their bid (for the future, possibly
         #    multiple times) as a proxy to their bid
-        if sealing:
+        if auction.sealed_bids:
             # === Sealed-bid variant where we can't see others' bids ===
             guesses = []
 

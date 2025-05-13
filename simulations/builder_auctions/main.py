@@ -11,6 +11,8 @@ n_rounds_to_print = 5
 num_players = 10
 num_reactive = 5
 
+sealed_bids = True
+
 # Player parameter ranges
 speed_range_reactive = (0.2, 0.3), (0.6, 0.7)
 speed_range_nonreactive = (0.0, 0.1), (0.2, 0.3)
@@ -54,7 +56,7 @@ pid_to_index = {p.player_id: i for i, p in enumerate(players)}
 
 ### ====== Run Simulation ====== ###
 
-auction = Auction(players, cutoff_time_range)
+auction = Auction(players, cutoff_time_range, sealed_bids)
 round_results, winnings = auction.run_simulation(num_rounds)
 
 ### ====== Print First N Rounds ====== ###

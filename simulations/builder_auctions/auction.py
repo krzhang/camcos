@@ -3,9 +3,10 @@ from formatting import FormatPrinter
 import player
 
 class Auction:
-    def __init__(self, players, cutoff_time_range):
+    def __init__(self, players, cutoff_time_range, sealed_bids):
         self.players = players
         self.cutoff_time_range = cutoff_time_range
+        self.sealed_bids = sealed_bids
 
     def generate_round_info(self,debug=False):
         """
