@@ -14,10 +14,10 @@ num_reactive = 5
 sealed_bids = False
 
 # Player parameter ranges
-speed_range_reactive = (0.2, 0.3), (0.6, 0.7)
-speed_range_nonreactive = (0.0, 0.1), (0.2, 0.3)
-bid_range_reactive = (0.91, 0.39)
-bid_range_nonreactive = (0.86, 0.26)
+speed_range_reactive = (0.3, 0.5), (0.6, 0.7)
+speed_range_nonreactive = (0.1, 0.2), (0.3, 0.4)
+bid_range_reactive = (0.89, 0.5)
+bid_range_nonreactive = (0.92, 0.26)
 
 cutoff_time_range = (0.6, 0.7)
 num_rounds = 216000
@@ -81,14 +81,25 @@ if print_first_n_rounds:
 
         print(f"{'ID':<4} {'Type':<14} {'Valuation':<10} {'Bid':<10} {'Submit Time':<13} {'Status'}")
         print("-" * 60)
+        
         for p in players:
             pid = p.player_id
             val = round_data["valuations"][pid]
-            _, bid, submit_by = next((a[0].player_id, a[1], round_data["submit_bys"][a[0].player_id])
-                                     for a in round_data["actions"] if a[0].player_id == pid)
-            status = "ON TIME" if submit_by < cutoff_time else "LATE"
             typ = "Reactive" if p.reactive else "Non-Reactive"
-            print(f"P{pid:<3} {typ:<14} {val:<10.4f} {bid:<10.4f} {submit_by:<13.4f} {status}")
+
+            match = next(
+                ((a[0].player_id, a[1], round_data["submit_bys"][a[0].player_id])
+                for a in round_data["actions"] if a[0].player_id == pid),
+                None
+            )
+
+            if match is not None:
+                _, bid, submit_by = match
+                status = "ON TIME" if submit_by < round_data["cutoff_time"] else "LATE"
+                print(f"P{pid:<3} {typ:<14} {val:<10.4f} {bid:<10.4f} {submit_by:<13.4f} {status}")
+            else:
+                print(f"P{pid:<3} {typ:<14} {val:<10.4f} {'N/A':<10} {'N/A':<13} MISSED")
+
 
 ### ====== Final Profit Summary ====== ###
 

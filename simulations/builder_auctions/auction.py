@@ -61,12 +61,21 @@ class Auction:
         winner = None
         winning_bid = 0
         winning_value = None
+
         for p in submit_order:
-            bid = p.determine_bid(vals[p.player_id], self, actions, debug=debug)
+            pid = p.player_id
+            submit_time = submit_bys[pid]
+
+            # Skip if player missed the cutoff time
+            if submit_time >= cutoff_time:
+                continue
+
+            bid = p.determine_bid(vals[pid], self, actions, debug=debug)
             actions.append((p, bid))
             if bid > winning_bid:
                 winner = p
                 winning_bid = bid
+
 
         if winner is not None:
             # winning_value = real_val - winning_bid
