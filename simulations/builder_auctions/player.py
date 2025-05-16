@@ -77,30 +77,24 @@ class RangePlayer(Player):
         #    seen (if it's valuable to us)
         # 2) for players we have not seen, we should sample their bid (for the future, possibly
         #    multiple times) as a proxy to their bid
-        if auction.sealed_bids:
-            # === Sealed-bid variant where we can't see others' bids ===
-            guesses = []
 
-            for p in auction.players:
-                if p.player_id != self.player_id:
-                    # Sample another guess from known strategy distribution
-                    guess_ratio = p.sample_naive_bid_ratio()
-                    guessed_bid = guess_ratio * random.uniform(0.0, 1.0)
-                    guesses.append(guessed_bid)
-            if guesses:
-                max_guess = max(guesses)
-
-                if my_bid < max_guess < val:
-                    my_bid = max_guess
-            return my_bid
-        else:
-            seen = [] # list of players we have seen 
-            for (p, bid) in actions:
-                pid = p.player_id
-                if debug:
+        seen = [] # list of players we have seen 
+        for (p, bid) in actions:
+            pid = p.player_id
+            if debug:
+                if auction.sealed_bids:
+                    print ("Sees {} bid some value".format(pid))
+                else:
                     print ("Sees {} bid {}".format(pid, bid))
-                seen.append(pid)
-                if bid >= my_bid:
+            seen.append(pid)
+            if auction.sealed_bids:
+                bid = p.sample_naive_bid_ratio() * random.uniform(0.0, 1.0) 
+                if val > bid >= my_bid:
+                    my_bid = min(bid + EPSILON, val)
+                    if debug:
+                        print("{} considers updating bid to {} due to: {}".format(self.player_id, my_bid, pid))
+            else:
+                if val > bid >= my_bid:
                     my_bid = min(bid + EPSILON, val)
                     if debug:
                         print("{} considers updating bid to {} due to: {}".format(self.player_id, my_bid, pid))
@@ -112,7 +106,7 @@ class RangePlayer(Player):
                 if debug:
                     print("considers {}".format(p.player_id))
                 bid = p.sample_naive_bid_ratio() * random.uniform(0.0, 1.0) 
-                if bid >= my_bid:
+                if val > bid >= my_bid:
                     if debug:
                         print("{} considers updating bid to {} due to: not seeing bid from {}".format(self.player_id, my_bid, p.player_id))
                     my_bid = min(bid, val)

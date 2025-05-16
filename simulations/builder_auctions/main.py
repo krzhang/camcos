@@ -11,15 +11,15 @@ n_rounds_to_print = 5
 num_players = 10
 num_reactive = 5
 
-sealed_bids = False
+sealed_bids = True
 
 # Player parameter ranges
 speed_range_reactive = (0.3, 0.5), (0.6, 0.7)
 speed_range_nonreactive = (0.1, 0.2), (0.3, 0.4)
 bid_range_reactive = (0.89, 0.5)
-bid_range_nonreactive = (0.92, 0.26)
+bid_range_nonreactive = (0.86, 0.26)
 
-cutoff_time_range = (0.6, 0.7)
+cutoff_time_range = (0.6, 0.75)
 num_rounds = 216000
 
 ### ====== Generate Players ====== ###
